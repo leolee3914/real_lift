@@ -46,5 +46,5 @@ multiple_floors_mode_formid: int 開啟選擇樓層功能時使用的表單ID<br
 
 ## 真正升降機插件由 Lee Siu San 制作
 
-[https://github.com/leolee3914](https://github.com/leolee3914)
+[https://github.com/leolee3914](https://github.com/leolee3914)<br>
 [https://gitlab.com/leolee3914](https://gitlab.com/leolee3914)
