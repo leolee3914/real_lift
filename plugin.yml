@@ -1,0 +1,9 @@
+## https://gitlab.com/leolee3914/real-lift
+name: real_lift
+main: real_lift\Main
+version: 1.0.0
+api: [1.0.0, 3.1.0]
+## https://gitlab.com/leolee3914/real-lift
+load: POSTWORLD
+author: Leolee3914
+description: real_lift
