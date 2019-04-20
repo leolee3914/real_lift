@@ -1,4 +1,6 @@
 # 真正升降機插件
+# ★本插件所有更新會在gitlab發佈
+# [https://gitlab.com/leolee3914/real-lift](https://gitlab.com/leolee3914/real-lift)
 
 比較真實的Pocketmine升降機插件
 
