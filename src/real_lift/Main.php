@@ -219,7 +219,7 @@ class Main extends PluginBase implements Listener{
 				foreach ( $pls as $k=>$p ) {
 					if ( $p->isOnline() and $this->inlift($lv, $p, $pos) ) {
 						if ( $data[2] === 'up' ) {
-							$p->setMotion(new Vector3(0, 0.45, 0));
+							$p->setMotion(new Vector3(0, 0.32, 0));
 							$p->resetFallDistance();
 							if ( $p->y < ($pos->y-2.5) ) {
 								$canmove = false;
