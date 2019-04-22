@@ -380,10 +380,10 @@ class Main extends PluginBase implements Listener{
 								[-1,-1],
 							];
 							$lvh = $lv->getWorldHeight();
-							foreach ( $checkxz as $xz ) {
-								$x = $v3->x+$xz[0];
-								$z = $v3->z+$xz[1];
-								for ( $y=5;$y<$lvh;++$y ) {
+							for ( $y=5;$y<$lvh;++$y ) {
+								foreach ( $checkxz as $xz ) {
+									$x = $v3->x+$xz[0];
+									$z = $v3->z+$xz[1];
 									$yy = $y-3;
 									$bid = $lv->getBlockIdAt($x, $yy, $z);
 									if ( $bid === 63 or $bid === 68 ) {
