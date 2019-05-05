@@ -543,6 +543,9 @@ class Main extends PluginBase implements Listener{
 	}
 	
 	function inlift ( ?Level $lv, Player $p, $x, $y=0, $z=0 ) : bool {
+		if ( $p->getGamemode() === 3 ) {
+			return false;
+		}
 		if ( $x instanceof Vector3 ) {
 			$x = $x->floor();
 			$y = $x->y;
