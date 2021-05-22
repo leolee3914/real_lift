@@ -1,6 +1,4 @@
 # 真正升降機插件
-# ★本插件所有更新會在gitlab發佈
-# [https://gitlab.com/leolee3914/real-lift](https://gitlab.com/leolee3914/real-lift)
 
 比較真實的Pocketmine升降機插件
 
@@ -62,7 +60,6 @@
 
 ### config.yml
 multiple_floors_mode: bool 是否開啟選擇樓層功能<br>
-multiple_floors_mode_formid: int 開啟選擇樓層功能時使用的表單ID<br>
 enable3x3: bool 啟用3x3的升降機 (須先開啟選擇樓層功能)<br>
 enable5x5: bool 啟用5x5的升降機 (須先開啟選擇樓層功能)<br>
 tp_entity: bool 移動升降機中的所有實體(Entity)<br>

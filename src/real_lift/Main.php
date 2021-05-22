@@ -60,6 +60,7 @@ use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerActionPacket;
 use pocketmine\block\BlockFactory;
+use pocketmine\scheduler\ClosureTask;
 
 class Main extends PluginBase implements Listener{
 	private static $instance;
@@ -78,10 +79,6 @@ class Main extends PluginBase implements Listener{
 		$this->config = new Config($this->getDataFolder()."config.yml", Config::YAML, array());
 		if ( !isset($this->config->multiple_floors_mode) ) {
 			$this->config->multiple_floors_mode = true;
-			$this->config->save();
-		}
-		if ( !isset($this->config->multiple_floors_mode_formid) ) {
-			$this->config->multiple_floors_mode_formid = 5;
 			$this->config->save();
 		}
 		if ( !isset($this->config->enable3x3) ) {
@@ -105,7 +102,9 @@ class Main extends PluginBase implements Listener{
 		$this->floorlistliftpos = [];
 		$this->sendformtime = [];
 		
-		$this->getScheduler()->scheduleRepeatingTask(new callbackTask([$this, 'move_lift']), 1);
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(int $currentTick) : void{
+			$this->move_lift();
+		}), 1);
 	}
 	
 	function pq ( PlayerQuitEvent $e ) {
@@ -434,7 +433,7 @@ class Main extends PluginBase implements Listener{
 		return true;
 	}
 	
-	function sendform ( Player $p, int $id, $adata = [] ) {
+	function sendform ( Player $p, int $formId, $adata = [] ) {
 		$n = $p->getName();
 		if ( isset($this->sendformtime[$n]) ) {
 			if ( $this->sendformtime[$n] > microtime(true) ) {
@@ -445,10 +444,8 @@ class Main extends PluginBase implements Listener{
 		if ( !$this->config->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
 			return;
 		}
-		$pk = new \pocketmine\network\mcpe\protocol\ModalFormRequestPacket();
-		$pk->formId = $id;
-		switch ( $id ) {
-			case $this->config->multiple_floors_mode_formid;
+		switch ( $formId ) {
+			case 0;
 				$data = [
 				'type'=>'form',
 				'title'=>TF::RED.'升降機',
@@ -460,57 +457,53 @@ class Main extends PluginBase implements Listener{
 				}
 				break;
 		}
-		$pk->formData = json_encode($data);
-		$p->dataPacket($pk);
+		new Form($p, $data, function (Player $p, $data) use ($formId) {
+			$this->handleForm($p, $data, $formId);
+		});
 	}
 	
-	function pk ( DataPacketReceiveEvent $e ) {
-		$p = $e->getPlayer();
+	function handleForm ( Player $p, $data, int $formId ) {
 		$n = $p->getName();
 		if ( !$this->config->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
 			return;
 		}
-		$pk = $e->getPacket();
-		if ( $pk instanceof \pocketmine\network\mcpe\protocol\ModalFormResponsePacket ) {
-			$data = json_decode($pk->formData, true);
-			if ( $data === null ) {
-				return;
-			}
-			switch ( $pk->formId ) {
-				case $this->config->multiple_floors_mode_formid;
-					$data = (int)$data;
-					if ( !isset($this->floorlist[$n][$data]) ) {
-						return;
-					}
-					$pos = $this->floorlistliftpos[$n];
-					$lv = $pos[0];
-					$v3 = $pos[1];
-					$fast_mode = $pos[3];
-					if ( $data === 0 or $data === (count($this->floorlist[$n])-1) ) {
-						$fast_mode = 0;
-					}
-					$hash = $this->lifthash($lv, $v3);
-					if ( !isset($this->movinglift[$hash]) and $this->islift($lv, $v3) ) {
-						$this->movinglift[$hash] = [
-							0=>Position::fromObject($v3, $lv),
-							1=>[],
-							2=>($this->floorlist[$n][$data][1]>$v3->y ? 'up' : 'down'),
-							3=>false,
-							4=>0,
-							5=>false,
-							6=>$this->floorlist[$n][$data][1],
-							7=>false,
-							8=>false,
-							9=>$this->getliftsize($lv, $v3),
-							10=>$fast_mode,
-						];
-					} else {
-						$p->sendMessage(TF::RED.'!!! 你不在該升降機中或升降機已經移動 !!!');
-					}
-					unset($this->floorlist[$n]);
-					unset($this->floorlistliftpos[$n]);
-					break;
-			}
+		if ( $data === null ) {
+			return;
+		}
+		switch ( $formId ) {
+			case 0;
+				$data = (int)$data;
+				if ( !isset($this->floorlist[$n][$data]) ) {
+					return;
+				}
+				$pos = $this->floorlistliftpos[$n];
+				$lv = $pos[0];
+				$v3 = $pos[1];
+				$fast_mode = $pos[3];
+				if ( $data === 0 or $data === (count($this->floorlist[$n])-1) ) {
+					$fast_mode = 0;
+				}
+				$hash = $this->lifthash($lv, $v3);
+				if ( !isset($this->movinglift[$hash]) and $this->islift($lv, $v3) ) {
+					$this->movinglift[$hash] = [
+						0=>Position::fromObject($v3, $lv),
+						1=>[],
+						2=>($this->floorlist[$n][$data][1]>$v3->y ? 'up' : 'down'),
+						3=>false,
+						4=>0,
+						5=>false,
+						6=>$this->floorlist[$n][$data][1],
+						7=>false,
+						8=>false,
+						9=>$this->getliftsize($lv, $v3),
+						10=>$fast_mode,
+					];
+				} else {
+					$p->sendMessage(TF::RED.'!!! 你不在該升降機中或升降機已經移動 !!!');
+				}
+				unset($this->floorlist[$n]);
+				unset($this->floorlistliftpos[$n]);
+				break;
 		}
 	}
 	
@@ -585,7 +578,7 @@ class Main extends PluginBase implements Listener{
 								$floorlist[] = [TF::YELLOW.'最低層 (高度:1)', 5];
 								$this->floorlist[$n] = $floorlist;
 								$this->floorlistliftpos[$n] = [$lv, $v3, $p, $fast_mode];
-								$this->sendform($p, $this->config->multiple_floors_mode_formid);
+								$this->sendform($p, 0);
 								return;
 							}
 						}
@@ -870,16 +863,27 @@ class Main extends PluginBase implements Listener{
 	
 }
 
-class callbackTask extends \pocketmine\scheduler\Task {
-    private $callable;
-    private $args;
-    
-    public function __construct(callable $c, $args = []){
-		$this->callable = $c;
-		$this->args = $args;
-    }
-
-    public function onRun(int $currentTick){
-		call_user_func_array($this->callable, $this->args);
-    }
+class Form implements \pocketmine\form\Form {
+	protected $formData = [];
+	protected $closure = null;
+	
+	function __construct ( ?Player $p, array $formData, ?\Closure $closure = null ) {
+		$this->formData = $formData;
+		$this->closure = $closure;
+		if ( $p !== null ) {
+			$p->sendForm($this);
+		}
+	}
+	
+	public function handleResponse(Player $player, $data) : void {
+		if ( $this->closure !== null ) {
+			($this->closure)($player, $data);
+		}
+	}
+	
+	function jsonSerialize () {
+		return $this->formData;
+	}
+	
 }
+
