@@ -232,10 +232,8 @@ class Main extends PluginBase implements Listener{
 			}
 			$this->liftcheckplayer($lv, $hash);
 			$pls = $data[1];
-			foreach ( $pls as $k=>$p ) {
-				if ( $p instanceof Player ) {
-					$p->resetFallDistance();
-				}
+			foreach ( $pls as $entity ) {
+				$entity->resetFallDistance();
 			}
 			$canmove = true;
 			if ( $data[2] === self::MOVE_UP ) {
