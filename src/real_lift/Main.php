@@ -67,6 +67,15 @@ class Main extends PluginBase implements Listener{
 	const MOVE_DOWN = 1;
 	const MOVE_STOP = 2;
 	
+	const QUEUE_CHECK_XZ_REDSTONE_LAMP = [
+		[1,0],[0,1],[-1,0],[0,-1],
+	];
+	const QUEUE_CHECK_XZ_SIGN = [
+		[1,1],[-1,1],[1,-1],[-1,-1],
+		[2,2],[-2,2],[2,-2],[-2,-2],
+		[3,3],[-3,3],[3,-3],[-3,-3],
+	];
+	
 	private static $instance;
 
 	public static function getInstance(){
@@ -602,13 +611,7 @@ class Main extends PluginBase implements Listener{
 			}
 		} elseif ( $id === 123 or $id === 124 ) {
 			if ( !$p->isSneaking() ) {
-				$checkxz = [
-					[1,0],
-					[0,1],
-					[-1,0],
-					[0,-1],
-				];
-				$cancell = $this->checkqueue($p, $b, $checkxz);
+				$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancell ) {
 					foreach ( $lv->getPlayers() as $pl ) {
 						$this->playsound($b, 'random.click', $pl, 1, 0.6);
@@ -621,21 +624,7 @@ class Main extends PluginBase implements Listener{
 			if ( $tile instanceof Sign ) {
 				if ( strtolower($tile->getLine(0)) === '[lift]' ) {
 					$e->setCancelled(true);
-					$checkxz = [
-						[1,1],
-						[-1,1],
-						[1,-1],
-						[-1,-1],
-						[2,2],
-						[-2,2],
-						[2,-2],
-						[-2,-2],
-						[3,3],
-						[-3,3],
-						[3,-3],
-						[-3,-3],
-					];
-					$cancell = $this->checkqueue($p, $b, $checkxz);
+					$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_SIGN);
 					if ( $cancell ) {
 						foreach ( $lv->getPlayers() as $pl ) {
 							$this->playsound($b, 'random.click', $pl, 1, 0.6);
@@ -646,7 +635,7 @@ class Main extends PluginBase implements Listener{
 		}
 	}
 	
-	function checkqueue ( Player $p, Position $b, array $checkxz=[] ) {
+	function checkqueue ( Player $p, Position $b, array $checkxz ) {
 		$esetcancell = false;
 		$lv = $p->getLevel();
 		$lvh = $lv->getWorldHeight();
