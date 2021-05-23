@@ -116,13 +116,7 @@ class Main extends PluginBase implements Listener{
 		unset($this->sendformtime[$n]);
 	}
 	
-	function playsound ( Vector3 $v3, string $sound, $p = null, $vol = 1, $pitch = 1 ) {
-		if ( !is_numeric($vol) ) {
-			$vol = 1;
-		}
-		if ( !is_numeric($pitch) ) {
-			$pitch = 1;
-		}
+	function playsound ( Vector3 $v3, string $sound, ?Player $p = null, float $vol = 1.0, float $pitch = 1.0 ) {
 		$pk = new \pocketmine\network\mcpe\protocol\PlaySoundPacket();
 		$pk->soundName = $sound;
 		$pk->x = $v3->x;
@@ -130,7 +124,7 @@ class Main extends PluginBase implements Listener{
 		$pk->z = $v3->z;
 		$pk->volume = $vol;
 		$pk->pitch = $pitch;
-		if ( $p instanceof Player ) {
+		if ( $p !== null ) {
 			$p->dataPacket($pk);
 			return;
 		}
