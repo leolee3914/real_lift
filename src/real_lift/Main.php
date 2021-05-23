@@ -65,6 +65,7 @@ use pocketmine\scheduler\ClosureTask;
 class Main extends PluginBase implements Listener{
 	const MOVE_UP = 0;
 	const MOVE_DOWN = 1;
+	const MOVE_STOP = 2;
 	
 	private static $instance;
 
@@ -313,7 +314,7 @@ class Main extends PluginBase implements Listener{
 					$data[7] = true;
 					continue;
 				}
-				$data[2] = 'stop';
+				$data[2] = self::MOVE_STOP;
 				$data[3] = 40;
 				$data[5] = true;
 				continue;
@@ -370,7 +371,7 @@ class Main extends PluginBase implements Listener{
 		}
 	}
 	
-	function switchblock ( &$data, $updown='stop', $h=0, $pls, $addmin=0, $addmax=0 ) {
+	function switchblock ( &$data, $updown=self::MOVE_STOP, $h=0, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$lv = $pos->getLevel();
 		if ( $updown === self::MOVE_UP ) {
@@ -590,7 +591,7 @@ class Main extends PluginBase implements Listener{
 					} elseif ( $this->movinglift[$hash][3] !== false ) {
 						$p->sendMessage(TF::YELLOW.'!!! 升降機稍作停留，請等候數秒鐘 !!!');
 					} elseif ( isset($this->movinglift[$hash][1][$n]) ) {
-						$this->movinglift[$hash][2] = 'stop';
+						$this->movinglift[$hash][2] = self::MOVE_STOP;
 						$this->movinglift[$hash][3] = 40;
 						$p->sendMessage(TF::GREEN.'> 已停止升降機');
 					}
@@ -664,7 +665,7 @@ class Main extends PluginBase implements Listener{
 							$this->movinglift[$hash] = [
 								0=>Position::fromObject($v3, $lv),
 								1=>[],
-								2=>'stop',
+								2=>self::MOVE_STOP,
 								3=>false,
 								4=>0,
 								5=>false,
