@@ -237,7 +237,7 @@ class Main extends PluginBase implements Listener{
 			}
 			$canmove = true;
 			if ( $data[2] === self::MOVE_UP ) {
-				foreach ( $pls as $k=>$p ) {
+				foreach ( $pls as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, 0.8, 0));
 						if ( $p->y < ($pos->y-2.4) ) {
@@ -246,7 +246,7 @@ class Main extends PluginBase implements Listener{
 					}
 				}
 			} elseif ( $data[2] === self::MOVE_DOWN ) {
-				foreach ( $pls as $k=>$p ) {
+				foreach ( $pls as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, -0.4, 0));
 						if ( $p->y > ($pos->y-3) ) {
@@ -338,7 +338,7 @@ class Main extends PluginBase implements Listener{
 						}
 					}
 					$v3y = $pos->y-3;
-					foreach ( $pls as $k=>$p ) {
+					foreach ( $pls as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->add(0,1));
 						}
@@ -357,7 +357,7 @@ class Main extends PluginBase implements Listener{
 						}
 					}
 					$v3y = $pos->y-3;
-					foreach ( $pls as $k=>$p ) {
+					foreach ( $pls as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->add(0,-1));
 						}
@@ -399,7 +399,7 @@ class Main extends PluginBase implements Listener{
 				}
 			}
 		}
-		foreach ( $pls as $k=>$p ) {
+		foreach ( $pls as $p ) {
 			$p->teleport($p->add(0,$h));
 		}
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
@@ -588,7 +588,7 @@ class Main extends PluginBase implements Listener{
 						];
 					} elseif ( $this->movinglift[$hash][3] !== false ) {
 						$p->sendMessage(TF::YELLOW.'!!! 升降機稍作停留，請等候數秒鐘 !!!');
-					} elseif ( isset($this->movinglift[$hash][1][$n]) ) {
+					} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
 						$this->movinglift[$hash][2] = self::MOVE_STOP;
 						$this->movinglift[$hash][3] = 40;
 						$p->sendMessage(TF::GREEN.'> 已停止升降機');
@@ -728,7 +728,7 @@ class Main extends PluginBase implements Listener{
 		foreach ( $all as $pl ) {
 			$ispl = $pl instanceof Player;
 			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x >= $minx and $pl->x < $maxx and $pl->z >= $minz and $pl->z < $maxz and $pl->y >= $miny and $pl->y < $maxy ) {
-				$this->movinglift[$hash][1][$ispl ? $pl->getName() : ('*'.$pl->getId())] = $pl;
+				$this->movinglift[$hash][1][$pl->getId()] = $pl;
 			}
 		}
 		return;
@@ -836,15 +836,14 @@ class Main extends PluginBase implements Listener{
 	}
 	
 	function pvp ( EntityDamageEvent $e ) {
-		$p = $e->getEntity();
-		if ( !$p instanceof Player or $e->isCancelled() ) {
+		$entity = $e->getEntity();
+		if ( $e->isCancelled() ) {
 			return;
 		}
-		$n = $p->getName();
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
 			foreach ( $this->movinglift as $hash=>$data ) {
-				if ( isset($data[1][$n]) ) {
+				if ( isset($data[1][$entity->getId()]) ) {
 					$e->setCancelled(true);
 					return;
 				}
