@@ -382,13 +382,12 @@ class Main extends PluginBase implements Listener{
 			if ( $h < 6 or ($pos->y+6) >= $lv->getWorldHeight() ) {
 				return false;
 			}
+			$h = 6;
 		} elseif ( $updown === self::MOVE_DOWN ) {
 			if ( $h > -6 or ($pos->y-5) <= 5 ) {
 				return false;
 			}
-			if ( count($pls) !== 0 ) {
-				$h = max(-20, $h);
-			}
+			$h = -6;
 		} else {
 			return false;
 		}
