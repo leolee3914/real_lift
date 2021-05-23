@@ -63,6 +63,9 @@ use pocketmine\block\BlockFactory;
 use pocketmine\scheduler\ClosureTask;
 
 class Main extends PluginBase implements Listener{
+	const MOVE_UP = 0;
+	const MOVE_DOWN = 1;
+	
 	private static $instance;
 
 	public static function getInstance(){
@@ -191,13 +194,13 @@ class Main extends PluginBase implements Listener{
 				if ( $issetqueue ) {
 					foreach ( $this->queue[$hash] as $xyzhash=>$dt ) {
 						if ( $pos->y > $dt[1] ) {
-							$data[2] = 'down';
+							$data[2] = self::MOVE_DOWN;
 							$data[3] = false;
 							$data[6] = $dt[1];
 							$data[7] = false;
 							$data[8] = $dt;
 						} elseif ( $pos->y < $dt[1] ) {
-							$data[2] = 'up';
+							$data[2] = self::MOVE_UP;
 							$data[3] = false;
 							$data[6] = $dt[1];
 							$data[7] = false;
@@ -234,7 +237,7 @@ class Main extends PluginBase implements Listener{
 				}
 			}
 			$canmove = true;
-			if ( $data[2] === 'up' ) {
+			if ( $data[2] === self::MOVE_UP ) {
 				foreach ( $pls as $k=>$p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, 0.8, 0));
@@ -243,7 +246,7 @@ class Main extends PluginBase implements Listener{
 						}
 					}
 				}
-			} elseif ( $data[2] === 'down' ) {
+			} elseif ( $data[2] === self::MOVE_DOWN ) {
 				foreach ( $pls as $k=>$p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, -0.4, 0));
@@ -276,7 +279,7 @@ class Main extends PluginBase implements Listener{
 			}
 			$airid = [];
 			$stop = false;
-			if ( $data[2] === 'up' and $canmove ) {
+			if ( $data[2] === self::MOVE_UP and $canmove ) {
 				if ( ($pos->y+1) >= $lv->getWorldHeight() or $pos->y === $data[6] ) {
 					$stop = true;
 				}
@@ -289,7 +292,7 @@ class Main extends PluginBase implements Listener{
 						}
 					}
 				}
-			} elseif ( $data[2] === 'down' and $canmove ) {
+			} elseif ( $data[2] === self::MOVE_DOWN and $canmove ) {
 				if ( $pos->y <= 5 or $pos->y === $data[6] ) {
 					$stop = true;
 				}
@@ -324,7 +327,7 @@ class Main extends PluginBase implements Listener{
 					unset($this->movinglift[$hash]);
 					continue;
 				}
-				if ( $data[2] === 'up' ) {
+				if ( $data[2] === self::MOVE_UP ) {
 					$ii = 0;
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
@@ -343,7 +346,7 @@ class Main extends PluginBase implements Listener{
 					}
 					$pos->y++;
 					++$data[4];
-				} elseif ( $data[2] === 'down' ) {
+				} elseif ( $data[2] === self::MOVE_DOWN ) {
 					$ii = 0;
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
@@ -370,11 +373,11 @@ class Main extends PluginBase implements Listener{
 	function switchblock ( &$data, $updown='stop', $h=0, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$lv = $pos->getLevel();
-		if ( $updown === 'up' ) {
+		if ( $updown === self::MOVE_UP ) {
 			if ( $h < 6 or ($pos->y+6) >= $lv->getWorldHeight() ) {
 				return false;
 			}
-		} elseif ( $updown === 'down' ) {
+		} elseif ( $updown === self::MOVE_DOWN ) {
 			if ( $h > -6 or ($pos->y-5) <= 5 ) {
 				return false;
 			}
@@ -477,7 +480,7 @@ class Main extends PluginBase implements Listener{
 					$this->movinglift[$hash] = [
 						0=>Position::fromObject($v3, $lv),
 						1=>[],
-						2=>($this->floorlist[$n][$data][1]>$v3->y ? 'up' : 'down'),
+						2=>($this->floorlist[$n][$data][1]>$v3->y ? self::MOVE_UP : self::MOVE_DOWN),
 						3=>false,
 						4=>0,
 						5=>false,
@@ -574,7 +577,7 @@ class Main extends PluginBase implements Listener{
 						$this->movinglift[$hash] = [
 							0=>Position::fromObject($v3, $lv),
 							1=>[],
-							2=>($b->y>$p->y ? 'up' : 'down'),
+							2=>($b->y>$p->y ? self::MOVE_UP : self::MOVE_DOWN),
 							3=>false,
 							4=>0,
 							5=>false,
