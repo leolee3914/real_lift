@@ -137,7 +137,7 @@ class Main extends PluginBase implements Listener{
 	
 	function move_lift () {
 		foreach ( $this->movinglift as $hash=>&$data ) {
-			//hash => [ 0=>now Position, 1=>[name=>Player], 2=>(string)status, 3=>waiting, 4=>(int)moved, 5=>(bool)playsound,6=>(int)target-y,7=>(bool)unset,8=>queue,9=>lift_size,10=>fast_mode ]
+			//hash => [ 0=>now Position, 1=>[entityID=>Player|Entity], 2=>(int)status, 3=>waiting, 4=>(int)moved, 5=>(bool)playsound,6=>(int)target-y,7=>(bool)unset,8=>queue,9=>lift_size,10=>fast_mode ]
 			$pos = $data[0];
 			$lv = $pos->getLevel();
 			if ( $lv->isClosed() or !$this->islift($lv, $pos) ) {
