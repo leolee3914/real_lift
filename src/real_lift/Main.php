@@ -72,7 +72,17 @@ class Main extends PluginBase implements Listener{
 	public static function getInstance(){
 		return static::$instance;
 	}
-
+	
+	var $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
+		
+	var $movinglift = [];
+		
+	var $queue = [];
+		
+	var $floorlist = [];
+	var $floorlistliftpos = [];
+	var $sendformtime = [];
+	
 	function onEnable(){
 		if(!static::$instance instanceof \real_lift\Main ){
 			static::$instance = $this;
@@ -80,31 +90,27 @@ class Main extends PluginBase implements Listener{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 		
 		@mkdir($this->getDataFolder());
-		$this->config = new Config($this->getDataFolder()."config.yml", Config::YAML, array());
-		if ( !isset($this->config->multiple_floors_mode) ) {
-			$this->config->multiple_floors_mode = true;
-			$this->config->save();
+		$config = new Config($this->getDataFolder().'config.yml', Config::YAML, array());
+		if ( !isset($config->multiple_floors_mode) ) {
+			$config->multiple_floors_mode = true;
+			$config->save();
 		}
-		if ( !isset($this->config->enable3x3) ) {
-			$this->config->enable3x3 = true;
-			$this->config->save();
+		if ( !isset($config->enable3x3) ) {
+			$config->enable3x3 = true;
+			$config->save();
 		}
-		if ( !isset($this->config->enable5x5) ) {
-			$this->config->enable5x5 = false;
-			$this->config->save();
+		if ( !isset($config->enable5x5) ) {
+			$config->enable5x5 = false;
+			$config->save();
 		}
-		if ( !isset($this->config->tp_entity) ) {
-			$this->config->tp_entity = true;
-			$this->config->save();
+		if ( !isset($config->tp_entity) ) {
+			$config->tp_entity = true;
+			$config->save();
 		}
-		
-		$this->movinglift = [];
-		
-		$this->queue = [];
-		
-		$this->floorlist = [];
-		$this->floorlistliftpos = [];
-		$this->sendformtime = [];
+		$this->multiple_floors_mode = (bool)$config->multiple_floors_mode;
+		$this->enable3x3 = (bool)$config->enable3x3;
+		$this->enable5x5 = (bool)$config->enable5x5;
+		$this->tp_entity = (bool)$config->tp_entity;
 		
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(int $currentTick) : void{
 			$this->move_lift();
@@ -432,7 +438,7 @@ class Main extends PluginBase implements Listener{
 			}
 		}
 		$this->sendformtime[$n] = microtime(true)+0.7;
-		if ( !$this->config->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
+		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
 			return;
 		}
 		switch ( $formId ) {
@@ -455,7 +461,7 @@ class Main extends PluginBase implements Listener{
 	
 	function handleForm ( Player $p, $data, int $formId ) {
 		$n = $p->getName();
-		if ( !$this->config->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
+		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
 			return;
 		}
 		if ( $data === null ) {
@@ -515,7 +521,7 @@ class Main extends PluginBase implements Listener{
 					$e->setCancelled(true);
 					$hash = $this->lifthash($lv, $v3);
 					if ( !isset($this->movinglift[$hash]) ) {
-						if ( $this->config->multiple_floors_mode ) {
+						if ( $this->multiple_floors_mode ) {
 							$signlist = [];
 							$checkxz = [
 								[1,1],
@@ -720,7 +726,7 @@ class Main extends PluginBase implements Listener{
 		$maxy = $v3->y;
 		$minz = $v3->z+$addmin;
 		$maxz = $v3->z+$addmax+1;
-		if ( $this->config->tp_entity ) {
+		if ( $this->tp_entity ) {
 			$all = $lv->getEntities();
 		} else {
 			$all = $lv->getPlayers();
@@ -774,7 +780,7 @@ class Main extends PluginBase implements Listener{
 	}
 	
 	function islift2_25 ( Level $lv, $islift_9, $x, $y=0, $z=0 ) {
-		if ( !$this->config->enable5x5 ) {
+		if ( !$this->enable5x5 ) {
 			return false;
 		}
 		if ( $x instanceof Vector3 ) {
@@ -797,7 +803,7 @@ class Main extends PluginBase implements Listener{
 	}
 	
 	function islift2_9 ( Level $lv, $x, $y=0, $z=0 ) {
-		if ( !$this->config->enable3x3 ) {
+		if ( !$this->enable3x3 ) {
 			return false;
 		}
 		if ( $x instanceof Vector3 ) {
