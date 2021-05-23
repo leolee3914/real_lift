@@ -158,7 +158,7 @@ class Main extends PluginBase implements Listener{
 							case 68;
 								##$lv->addParticle(new \pocketmine\level\particle\RedstoneParticle($dt2[0]->add(0.5,0.5,0.5), 2));
 								//////////////////////////////
-								$f_addParticle = function ( Player $p, Vector3 $pos, String $pname ) {
+								$f_addParticle = static function ( Player $p, Vector3 $pos, string $pname ) {
 									$pk = new \pocketmine\network\mcpe\protocol\SpawnParticleEffectPacket();
 									$pk->position = $pos;
 									$pk->particleName = $pname;
