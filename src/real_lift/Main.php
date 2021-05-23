@@ -110,15 +110,10 @@ class Main extends PluginBase implements Listener{
 	function pq ( PlayerQuitEvent $e ) {
 		$p = $e->getPlayer();
 		$n = $p->getName();
-		if ( isset($this->floorlist[$n]) ) {
-			unset($this->floorlist[$n]);
-		}
-		if ( isset($this->floorlistliftpos[$n]) ) {
-			unset($this->floorlistliftpos[$n]);
-		}
-		if ( isset($this->sendformtime[$n]) ) {
-			unset($this->sendformtime[$n]);
-		}
+		
+		unset($this->floorlist[$n]);
+		unset($this->floorlistliftpos[$n]);
+		unset($this->sendformtime[$n]);
 	}
 	
 	function playsound ( Vector3 $v3, string $sound, $p = null, $vol = 1, $pitch = 1 ) {
