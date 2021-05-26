@@ -2,7 +2,10 @@
 
 比較真實的Pocketmine升降機插件
 
-## 使用方法
+## 許可證 License
+本項目以 Server Side Public License (SSPL) 授權，詳情請參考 LICENSE 及 [Server Side Public License FAQ](https://www.mongodb.com/licensing/server-side-public-license/faq)
+
+## 插件使用方法
 
 ### 創造升降機
 ![](https://i.imgur.com/XLIKerA.jpg)
