@@ -531,23 +531,9 @@ class Main extends PluginBase implements Listener{
 					if ( !isset($this->movinglift[$hash]) ) {
 						if ( $this->multiple_floors_mode ) {
 							$signlist = [];
-							$checkxz = [
-								[1,1],
-								[-1,1],
-								[1,-1],
-								[-1,-1],
-								[2,2],
-								[-2,2],
-								[2,-2],
-								[-2,-2],
-								[3,3],
-								[-3,3],
-								[3,-3],
-								[-3,-3],
-							];
 							$lvh = $lv->getWorldHeight();
 							for ( $y=5;$y<$lvh;++$y ) {
-								foreach ( $checkxz as $xz ) {
+								foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
 									$x = $v3->x+$xz[0];
 									$z = $v3->z+$xz[1];
 									$yy = $y-3;
