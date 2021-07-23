@@ -474,6 +474,9 @@ class Main extends PluginBase implements Listener{
 	}
 
 	function tap ( PlayerInteractEvent $e ) {
+		if ( $e->getAction() !== PlayerInteractEvent::RIGHT_CLICK_BLOCK ) {
+			return;
+		}
 		$p = $e->getPlayer();
 		$n = $p->getName();
 		$lv = $p->getLevel();
