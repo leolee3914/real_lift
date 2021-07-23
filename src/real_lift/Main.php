@@ -414,7 +414,7 @@ class Main extends PluginBase implements Listener{
 			case 0;
 				$data = [
 					'type'=>'form',
-					'title'=>TF::RED . '升降機',
+					'title'=>TF::DARK_BLUE . '升降機' . ($this->floorlistliftpos[$n][3]===true ? ' (快速模式)' : ''),
 					'content'=>TF::YELLOW . "請選擇樓層:\n",
 					'buttons'=>[],
 				];
@@ -514,7 +514,7 @@ class Main extends PluginBase implements Listener{
 								$tile = $lv->getTile($sign);
 								if ( $tile instanceof Sign ) {
 									if ( strtolower($tile->getLine(0)) === '[lift]' ) {
-										$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . ' (高度:' . ($yy-4) . ')', $yy];
+										$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($yy-4) . ')' . ($yy === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $yy];
 										if ( strtolower($tile->getLine(2)) === 'fast' ) {
 											$fast_mode = true;
 										}
@@ -525,8 +525,8 @@ class Main extends PluginBase implements Listener{
 						}
 						if ( count($floorlist) > 0 ) {
 							$floorlist = array_reverse($floorlist);
-							array_unshift($floorlist, [TF::YELLOW . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
-							$floorlist[] = [TF::YELLOW . '最低層 (高度:1)', 5];
+							array_unshift($floorlist, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
+							$floorlist[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
 							$this->floorlist[$n] = $floorlist;
 							$this->floorlistliftpos[$n] = [$lv, $v3, $p, $fast_mode];
 							$this->sendform($p, 0);
