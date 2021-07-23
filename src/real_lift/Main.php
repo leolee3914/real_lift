@@ -1,72 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace real_lift;
 
-use pocketmine\level\sound\LaunchSound;
-use pocketmine\level\sound\ClickSound;
-use pocketmine\level\sound\FizzSound;
-use pocketmine\plugin\PluginBase;
-use pocketmine\event\Listener;
-use pocketmine\command\Command;
-use pocketmine\command\CommandSender;
-use pocketmine\level\Position;
-use pocketmine\level\Level;
-use pocketmine\entity\Arrow ;
-use pocketmine\level\Location;
-use pocketmine\nbt\tag\Compound;
-use pocketmine\event\player\PlayerPreLoginEvent;
-use pocketmine\event\player\PlayerChatEvent;
-use pocketmine\item\Item;
-use pocketmine\Player;
-use pocketmine\inventory\PlayerInventory;
-use pocketmine\Server;
-use pocketmine\level\particle\FloatingTextParticle;
-use pocketmine\OfflinePlayer;
-use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
-use pocketmine\utils\Config;
-use pocketmine\command\ConsoleCommandSender;
-use pocketmine\math\Vector3;
-use pocketmine\scheduler\PluginTask;
-use pocketmine\block\Block;
-use pocketmine\event\entity\EntityDeathEvent;
-use pocketmine\event\entity\EntityDamageEvent;
-use pocketmine\event\player\PlayerInteractEvent;
-use pocketmine\tile\Sign;
-use pocketmine\tile\Tile;
-use pocketmine\utils\TextFormat as TF;
-use pocketmine\event\entity\EntityShootBowEvent;
-use pocketmine\event\player\PlayerDeathEvent;
-use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\block\SignChangeEvent;
-use pocketmine\event\block\BlockBreakEvent;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\event\entity\EntityLevelChangeEvent;
-use pocketmine\event\block\BlockPlaceEvent;
-use pocketmine\event\player\PlayerCommandPreprocessEvent;
-use pocketmine\event\player\PlayerRespawnEvent;
-use pocketmine\event\player\PlayerMoveEvent;
-use pocketmine\event\level\LevelLoadEvent;
-use pocketmine\event\level\LevelUnloadEvent;
-use pocketmine\inventory\Inventory;
 use pocketmine\entity\Entity;
-use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\ListTag;
-use pocketmine\nbt\tag\DoubleTag;
-use pocketmine\nbt\tag\FloatTag;
-use pocketmine\event\server\DataPacketReceiveEvent;
-use pocketmine\network\mcpe\protocol\InteractPacket;
-use pocketmine\network\mcpe\protocol\InventoryTransactionPacket;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\PlayerActionPacket;
-use pocketmine\block\BlockFactory;
+use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerInteractEvent;
+use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\form\Form as PMForm;
+use pocketmine\level\Level;
+use pocketmine\level\Position;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\PlaySoundPacket;
+use pocketmine\network\mcpe\protocol\SpawnParticleEffectPacket;
+use pocketmine\Player;
+use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
+use pocketmine\tile\Sign;
+use pocketmine\utils\Config;
+use pocketmine\utils\TextFormat as TF;
+use function count;
+use function is_array;
 
 class Main extends PluginBase implements Listener{
 	const MOVE_UP = 0;
 	const MOVE_DOWN = 1;
 	const MOVE_STOP = 2;
-	
+
 	const QUEUE_CHECK_XZ_REDSTONE_LAMP = [
 		[1,0],[0,1],[-1,0],[0,-1],
 	];
@@ -75,31 +37,31 @@ class Main extends PluginBase implements Listener{
 		[2,2],[-2,2],[2,-2],[-2,-2],
 		[3,3],[-3,3],[3,-3],[-3,-3],
 	];
-	
+
 	private static $instance;
 
 	public static function getInstance(){
 		return static::$instance;
 	}
-	
+
 	var $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
-		
+
 	var $movinglift = [];
-		
+
 	var $queue = [];
-		
+
 	var $floorlist = [];
 	var $floorlistliftpos = [];
 	var $sendformtime = [];
-	
+
 	function onEnable(){
 		if(!static::$instance instanceof \real_lift\Main ){
 			static::$instance = $this;
 		}
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		
+
 		@mkdir($this->getDataFolder());
-		$config = new Config($this->getDataFolder().'config.yml', Config::YAML, array());
+		$config = new Config($this->getDataFolder() . 'config.yml', Config::YAML, []);
 		if ( !isset($config->multiple_floors_mode) ) {
 			$config->multiple_floors_mode = true;
 			$config->save();
@@ -116,27 +78,27 @@ class Main extends PluginBase implements Listener{
 			$config->tp_entity = true;
 			$config->save();
 		}
-		$this->multiple_floors_mode = (bool)$config->multiple_floors_mode;
-		$this->enable3x3 = (bool)$config->enable3x3;
-		$this->enable5x5 = (bool)$config->enable5x5;
-		$this->tp_entity = (bool)$config->tp_entity;
-		
+		$this->multiple_floors_mode = (bool) $config->multiple_floors_mode;
+		$this->enable3x3 = (bool) $config->enable3x3;
+		$this->enable5x5 = (bool) $config->enable5x5;
+		$this->tp_entity = (bool) $config->tp_entity;
+
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(int $currentTick) : void{
 			$this->move_lift();
 		}), 1);
 	}
-	
+
 	function pq ( PlayerQuitEvent $e ) {
 		$p = $e->getPlayer();
 		$n = $p->getName();
-		
+
 		unset($this->floorlist[$n]);
 		unset($this->floorlistliftpos[$n]);
 		unset($this->sendformtime[$n]);
 	}
-	
+
 	function playsound ( Vector3 $v3, string $sound, ?Player $p = null, float $vol = 1.0, float $pitch = 1.0 ) {
-		$pk = new \pocketmine\network\mcpe\protocol\PlaySoundPacket();
+		$pk = new PlaySoundPacket();
 		$pk->soundName = $sound;
 		$pk->x = $v3->x;
 		$pk->y = $v3->y;
@@ -149,7 +111,7 @@ class Main extends PluginBase implements Listener{
 		}
 		return $pk;
 	}
-	
+
 	function move_lift () {
 		foreach ( $this->movinglift as $hash=>&$data ) {
 			//hash => [ 0=>now Position, 1=>[entityID=>Player|Entity], 2=>(int)status, 3=>waiting, 4=>(int)moved, 5=>(bool)playsound,6=>(int)target-y,7=>(bool)unset,8=>queue,9=>lift_size,10=>fast_mode ]
@@ -178,7 +140,7 @@ class Main extends PluginBase implements Listener{
 								##$lv->addParticle(new \pocketmine\level\particle\RedstoneParticle($dt2[0]->add(0.5,0.5,0.5), 2));
 								//////////////////////////////
 								$f_addParticle = static function ( Player $p, Vector3 $pos, string $pname ) {
-									$pk = new \pocketmine\network\mcpe\protocol\SpawnParticleEffectPacket();
+									$pk = new SpawnParticleEffectPacket();
 									$pk->position = $pos;
 									$pk->particleName = $pname;
 									$p->dataPacket($pk);
@@ -383,7 +345,7 @@ class Main extends PluginBase implements Listener{
 			}
 		}
 	}
-	
+
 	function switchblock ( &$data, $updown=self::MOVE_STOP, $h=0, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$lv = $pos->getLevel();
@@ -437,7 +399,7 @@ class Main extends PluginBase implements Listener{
 		$pos->y += $h;
 		return true;
 	}
-	
+
 	function sendform ( Player $p, int $formId, $adata = [] ) {
 		$n = $p->getName();
 		if ( isset($this->sendformtime[$n]) ) {
@@ -452,10 +414,10 @@ class Main extends PluginBase implements Listener{
 		switch ( $formId ) {
 			case 0;
 				$data = [
-				'type'=>'form',
-				'title'=>TF::RED.'升降機',
-				'content'=>TF::YELLOW."請選擇樓層:\n",
-				'buttons'=>[],
+					'type'=>'form',
+					'title'=>TF::RED . '升降機',
+					'content'=>TF::YELLOW . "請選擇樓層:\n",
+					'buttons'=>[],
 				];
 				foreach ( $this->floorlist[$n] as $floor ) {
 					$data['buttons'][] = ['text'=>$floor[0]];
@@ -466,7 +428,7 @@ class Main extends PluginBase implements Listener{
 			$this->handleForm($p, $data, $formId);
 		});
 	}
-	
+
 	function handleForm ( Player $p, $data, int $formId ) {
 		$n = $p->getName();
 		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
@@ -477,7 +439,7 @@ class Main extends PluginBase implements Listener{
 		}
 		switch ( $formId ) {
 			case 0;
-				$data = (int)$data;
+				$data = (int) $data;
 				if ( !isset($this->floorlist[$n][$data]) ) {
 					return;
 				}
@@ -504,14 +466,14 @@ class Main extends PluginBase implements Listener{
 						10=>$fast_mode,
 					];
 				} else {
-					$p->sendMessage(TF::RED.'!!! 你不在該升降機中或升降機已經移動 !!!');
+					$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
 				}
 				unset($this->floorlist[$n]);
 				unset($this->floorlistliftpos[$n]);
 				break;
 		}
 	}
-	
+
 	function tap ( PlayerInteractEvent $e ) {
 		$p = $e->getPlayer();
 		$n = $p->getName();
@@ -519,7 +481,7 @@ class Main extends PluginBase implements Listener{
 		$b = $e->getBlock();
 		$id = $b->getId();
 		if ( $id === 41 ) {
-			if ( true or (int)floor($p->x) === $b->x and (int)floor($p->z) === $b->z ) {
+			if ( true or (int) floor($p->x) === $b->x and (int) floor($p->z) === $b->z ) {
 				if ( $b->y > $p->y ) {
 					$v3 = $b;
 				} else {
@@ -554,7 +516,7 @@ class Main extends PluginBase implements Listener{
 									$tile = $lv->getTile($sign);
 									if ( $tile instanceof Sign ) {
 										if ( strtolower($tile->getLine(0)) === '[lift]' ) {
-											$floorlist[] = [TF::DARK_BLUE.$tile->getLine(1).' (高度:'.($yy-4).')', $yy];
+											$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . ' (高度:' . ($yy-4) . ')', $yy];
 											if ( strtolower($tile->getLine(2)) === 'fast' ) {
 												$fast_mode = true;
 											}
@@ -565,8 +527,8 @@ class Main extends PluginBase implements Listener{
 							}
 							if ( count($floorlist) > 0 ) {
 								$floorlist = array_reverse($floorlist);
-								array_unshift($floorlist, [TF::YELLOW.'最高層 (高度:'.($lvh-5).')', $lvh-1]);
-								$floorlist[] = [TF::YELLOW.'最低層 (高度:1)', 5];
+								array_unshift($floorlist, [TF::YELLOW . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
+								$floorlist[] = [TF::YELLOW . '最低層 (高度:1)', 5];
 								$this->floorlist[$n] = $floorlist;
 								$this->floorlistliftpos[$n] = [$lv, $v3, $p, $fast_mode];
 								$this->sendform($p, 0);
@@ -587,11 +549,11 @@ class Main extends PluginBase implements Listener{
 							10=>0,
 						];
 					} elseif ( $this->movinglift[$hash][3] !== false ) {
-						$p->sendMessage(TF::YELLOW.'!!! 升降機稍作停留，請等候數秒鐘 !!!');
+						$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
 					} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
 						$this->movinglift[$hash][2] = self::MOVE_STOP;
 						$this->movinglift[$hash][3] = 40;
-						$p->sendMessage(TF::GREEN.'> 已停止升降機');
+						$p->sendMessage(TF::GREEN . '> 已停止升降機');
 					}
 				}
 			}
@@ -620,7 +582,7 @@ class Main extends PluginBase implements Listener{
 			}
 		}
 	}
-	
+
 	function checkqueue ( Player $p, Position $b, array $checkxz ) {
 		$esetcancell = false;
 		$lv = $p->getLevel();
@@ -634,7 +596,7 @@ class Main extends PluginBase implements Listener{
 						$esetcancell = true;
 						$btyy = $b->y+3;
 						if ( $btyy === $y ) {
-							$p->sendMessage(TF::GREEN.'> 升降機已經到達');
+							$p->sendMessage(TF::GREEN . '> 升降機已經到達');
 							return $esetcancell;
 						}
 						$v3 = new Vector3($x, $y, $z);
@@ -678,7 +640,7 @@ class Main extends PluginBase implements Listener{
 		}
 		return $esetcancell;
 	}
-	
+
 	function liftcheckplayer ( Level $lv, $hash ) {
 		if ( !isset($this->movinglift[$hash]) ) {
 			return;
@@ -700,20 +662,14 @@ class Main extends PluginBase implements Listener{
 		$maxy = $v3->y;
 		$minz = $v3->z+$addmin;
 		$maxz = $v3->z+$addmax+1;
-		if ( $this->tp_entity ) {
-			$all = $lv->getEntities();
-		} else {
-			$all = $lv->getPlayers();
-		}
-		foreach ( $all as $pl ) {
+		foreach ( ($this->tp_entity ? $lv->getEntities() : $lv->getPlayers()) as $pl ) {
 			$ispl = $pl instanceof Player;
 			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x >= $minx and $pl->x < $maxx and $pl->z >= $minz and $pl->z < $maxz and $pl->y >= $miny and $pl->y < $maxy ) {
 				$this->movinglift[$hash][1][$pl->getId()] = $pl;
 			}
 		}
-		return;
 	}
-	
+
 	function getliftsize ( Level $lv, Vector3 $pos ) {
 		if ( $this->islift2_9($lv, $pos ) ) {
 			if ( $this->islift2_25($lv, true, $pos) ) {
@@ -723,24 +679,24 @@ class Main extends PluginBase implements Listener{
 		}
 		return 1;
 	}
-	
+
 	function islift2 ( Level $lv, $x, $y=0, $z=0 ) {
 		if ( $x instanceof Vector3 ) {
 			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
-			
+
 			$x = $x->x;
 		}
 		return $this->islift($lv, $x, $y, $z, 42);
 	}
-	
+
 	function islift ( Level $lv, $x, $y=0, $z=0, $bid=41 ) {
 		if ( $x instanceof Vector3 ) {
 			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
-			
+
 			$x = $x->x;
 		}
 		$idlist = [$bid, 0, 0, 0, 0, $bid];
@@ -752,7 +708,7 @@ class Main extends PluginBase implements Listener{
 		}
 		return true;
 	}
-	
+
 	function islift2_25 ( Level $lv, $islift_9, $x, $y=0, $z=0 ) {
 		if ( !$this->enable5x5 ) {
 			return false;
@@ -761,7 +717,7 @@ class Main extends PluginBase implements Listener{
 			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
-			
+
 			$x = $x->x;
 		}
 		for ( $addx=-2;$addx<=2;++$addx ) {
@@ -775,7 +731,7 @@ class Main extends PluginBase implements Listener{
 		}
 		return ( $islift_9 or $this->islift2_9($lv, $x, $y, $z) );
 	}
-	
+
 	function islift2_9 ( Level $lv, $x, $y=0, $z=0 ) {
 		if ( !$this->enable3x3 ) {
 			return false;
@@ -784,7 +740,7 @@ class Main extends PluginBase implements Listener{
 			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
-			
+
 			$x = $x->x;
 		}
 		for ( $addx=-1;$addx<=1;++$addx ) {
@@ -802,11 +758,11 @@ class Main extends PluginBase implements Listener{
 		}
 		return true;
 	}
-	
+
 	function lifthash ( $lv, $x, $z=0 ) {
 		if ( $x instanceof Vector3 ) {
 			$z = $x->z;
-			
+
 			$x = $x->x;
 		}
 		if ( $lv instanceof Level ) {
@@ -814,7 +770,7 @@ class Main extends PluginBase implements Listener{
 		}
 		return ( $lv . ';' . $x . ';' . $z );
 	}
-	
+
 	function pvp ( EntityDamageEvent $e ) {
 		$entity = $e->getEntity();
 		if ( $e->isCancelled() ) {
@@ -830,13 +786,13 @@ class Main extends PluginBase implements Listener{
 			}
 		}
 	}
-	
+
 }
 
-class Form implements \pocketmine\form\Form {
+class Form implements PMForm {
 	protected $formData = [];
 	protected $closure = null;
-	
+
 	function __construct ( ?Player $p, array $formData, ?\Closure $closure = null ) {
 		$this->formData = $formData;
 		$this->closure = $closure;
@@ -844,16 +800,16 @@ class Form implements \pocketmine\form\Form {
 			$p->sendForm($this);
 		}
 	}
-	
+
 	public function handleResponse(Player $player, $data) : void {
 		if ( $this->closure !== null ) {
 			($this->closure)($player, $data);
 		}
 	}
-	
+
 	function jsonSerialize () {
 		return $this->formData;
 	}
-	
+
 }
 
