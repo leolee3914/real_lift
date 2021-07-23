@@ -493,8 +493,9 @@ class Main extends PluginBase implements Listener{
 				$hash = $this->lifthash($lv, $v3);
 				if ( !isset($this->movinglift[$hash]) ) {
 					if ( $this->multiple_floors_mode ) {
-						$signlist = [];
 						$lvh = $lv->getWorldHeight();
+						$floorlist = [];
+						$fast_mode = false;
 						for ( $y=5;$y<$lvh;++$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
 								$x = $v3->x+$xz[0];
@@ -502,31 +503,21 @@ class Main extends PluginBase implements Listener{
 								$yy = $y-3;
 								$bid = $lv->getBlockIdAt($x, $yy, $z);
 								if ( $bid === 63 or $bid === 68 ) {
-									if ( !isset($signlist[$yy]) ) {
-										$signlist[$yy] = [];
-									}
-									$signlist[$yy][] = new Vector3($x, $yy, $z);
-								}
-							}
-						}
-						$floorlist = [];
-						$fast_mode = false;
-						foreach ( $signlist as $yyy=>$signs ) {
-							foreach ( $signs as $sign ) {
-								$yy = $sign->y+3;
-								$tile = $lv->getTile($sign);
-								if ( $tile instanceof Sign ) {
-									if ( strtolower($tile->getLine(0)) === '[lift]' ) {
-										$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($yy-4) . ')' . ($yy === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $yy];
-										if ( strtolower($tile->getLine(2)) === 'fast' ) {
-											$fast_mode = true;
+									$tile = $lv->getTileAt($x, $yy, $z);
+									if ( $tile instanceof Sign ) {
+										if ( strtolower($tile->getLine(0)) === '[lift]' ) {
+											$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y-4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+											if ( !$fast_mode and strtolower($tile->getLine(2)) === 'fast' ) {
+												$fast_mode = true;
+											}
+											goto nextY;
 										}
-										break;
 									}
 								}
 							}
+							nextY:
 						}
-						if ( count($floorlist) > 0 ) {
+						if ( count($floorlist) !== 0 ) {
 							$floorlist = array_reverse($floorlist);
 							array_unshift($floorlist, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
 							$floorlist[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
