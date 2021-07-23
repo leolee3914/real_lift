@@ -479,8 +479,8 @@ class Main extends PluginBase implements Listener{
 		}
 		$p = $e->getPlayer();
 		$n = $p->getName();
-		$lv = $p->getLevel();
 		$b = $e->getBlock();
+		$lv = $b->getLevel();
 		$id = $b->getId();
 		if ( $id === 41 ) {
 			if ( $b->y > $p->y ) {
