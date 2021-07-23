@@ -499,7 +499,7 @@ class Main extends PluginBase implements Listener{
 						$lvh = $lv->getWorldHeight();
 						$floorlist = [];
 						$fast_mode = false;
-						for ( $y=5;$y<$lvh;++$y ) {
+						for ( $y=$lvh-1;$y>=5;--$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
 								$x = $v3->x+$xz[0];
 								$z = $v3->z+$xz[1];
@@ -521,7 +521,6 @@ class Main extends PluginBase implements Listener{
 							nextY:
 						}
 						if ( count($floorlist) !== 0 ) {
-							$floorlist = array_reverse($floorlist);
 							array_unshift($floorlist, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
 							$floorlist[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
 							$this->floorlist[$n] = $floorlist;
