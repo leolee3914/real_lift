@@ -399,7 +399,7 @@ class Main extends PluginBase implements Listener{
 		return true;
 	}
 
-	function sendform ( Player $p, int $formId, $adata = [] ) {
+	function sendform ( Player $p, int $formId ) {
 		$n = $p->getName();
 		if ( isset($this->sendformtime[$n]) ) {
 			if ( $this->sendformtime[$n] > microtime(true) ) {
@@ -480,80 +480,78 @@ class Main extends PluginBase implements Listener{
 		$b = $e->getBlock();
 		$id = $b->getId();
 		if ( $id === 41 ) {
-			if ( true or (int) floor($p->x) === $b->x and (int) floor($p->z) === $b->z ) {
-				if ( $b->y > $p->y ) {
-					$v3 = $b;
-				} else {
-					$v3 = $b->add(0, 5);
-				}
-				if ( $this->islift($lv, $v3) ) {
-					$e->setCancelled(true);
-					$hash = $this->lifthash($lv, $v3);
-					if ( !isset($this->movinglift[$hash]) ) {
-						if ( $this->multiple_floors_mode ) {
-							$signlist = [];
-							$lvh = $lv->getWorldHeight();
-							for ( $y=5;$y<$lvh;++$y ) {
-								foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
-									$x = $v3->x+$xz[0];
-									$z = $v3->z+$xz[1];
-									$yy = $y-3;
-									$bid = $lv->getBlockIdAt($x, $yy, $z);
-									if ( $bid === 63 or $bid === 68 ) {
-										if ( !isset($signlist[$yy]) ) {
-											$signlist[$yy] = [];
-										}
-										$signlist[$yy][] = new Vector3($x, $yy, $z);
+			if ( $b->y > $p->y ) {
+				$v3 = $b;
+			} else {
+				$v3 = $b->add(0, 5);
+			}
+			if ( $this->islift($lv, $v3) ) {
+				$e->setCancelled(true);
+				$hash = $this->lifthash($lv, $v3);
+				if ( !isset($this->movinglift[$hash]) ) {
+					if ( $this->multiple_floors_mode ) {
+						$signlist = [];
+						$lvh = $lv->getWorldHeight();
+						for ( $y=5;$y<$lvh;++$y ) {
+							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
+								$x = $v3->x+$xz[0];
+								$z = $v3->z+$xz[1];
+								$yy = $y-3;
+								$bid = $lv->getBlockIdAt($x, $yy, $z);
+								if ( $bid === 63 or $bid === 68 ) {
+									if ( !isset($signlist[$yy]) ) {
+										$signlist[$yy] = [];
 									}
+									$signlist[$yy][] = new Vector3($x, $yy, $z);
 								}
-							}
-							$floorlist = [];
-							$fast_mode = false;
-							foreach ( $signlist as $yyy=>$signs ) {
-								foreach ( $signs as $sign ) {
-									$yy = $sign->y+3;
-									$tile = $lv->getTile($sign);
-									if ( $tile instanceof Sign ) {
-										if ( strtolower($tile->getLine(0)) === '[lift]' ) {
-											$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . ' (高度:' . ($yy-4) . ')', $yy];
-											if ( strtolower($tile->getLine(2)) === 'fast' ) {
-												$fast_mode = true;
-											}
-											break;
-										}
-									}
-								}
-							}
-							if ( count($floorlist) > 0 ) {
-								$floorlist = array_reverse($floorlist);
-								array_unshift($floorlist, [TF::YELLOW . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
-								$floorlist[] = [TF::YELLOW . '最低層 (高度:1)', 5];
-								$this->floorlist[$n] = $floorlist;
-								$this->floorlistliftpos[$n] = [$lv, $v3, $p, $fast_mode];
-								$this->sendform($p, 0);
-								return;
 							}
 						}
-						$this->movinglift[$hash] = [
-							0=>Position::fromObject($v3, $lv),
-							1=>[],
-							2=>($b->y>$p->y ? self::MOVE_UP : self::MOVE_DOWN),
-							3=>false,
-							4=>0,
-							5=>false,
-							6=>false,
-							7=>false,
-							8=>false,
-							9=>$this->getliftsize($lv, $v3),
-							10=>0,
-						];
-					} elseif ( $this->movinglift[$hash][3] !== false ) {
-						$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
-					} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
-						$this->movinglift[$hash][2] = self::MOVE_STOP;
-						$this->movinglift[$hash][3] = 40;
-						$p->sendMessage(TF::GREEN . '> 已停止升降機');
+						$floorlist = [];
+						$fast_mode = false;
+						foreach ( $signlist as $yyy=>$signs ) {
+							foreach ( $signs as $sign ) {
+								$yy = $sign->y+3;
+								$tile = $lv->getTile($sign);
+								if ( $tile instanceof Sign ) {
+									if ( strtolower($tile->getLine(0)) === '[lift]' ) {
+										$floorlist[] = [TF::DARK_BLUE . $tile->getLine(1) . ' (高度:' . ($yy-4) . ')', $yy];
+										if ( strtolower($tile->getLine(2)) === 'fast' ) {
+											$fast_mode = true;
+										}
+										break;
+									}
+								}
+							}
+						}
+						if ( count($floorlist) > 0 ) {
+							$floorlist = array_reverse($floorlist);
+							array_unshift($floorlist, [TF::YELLOW . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
+							$floorlist[] = [TF::YELLOW . '最低層 (高度:1)', 5];
+							$this->floorlist[$n] = $floorlist;
+							$this->floorlistliftpos[$n] = [$lv, $v3, $p, $fast_mode];
+							$this->sendform($p, 0);
+							return;
+						}
 					}
+					$this->movinglift[$hash] = [
+						0=>Position::fromObject($v3, $lv),
+						1=>[],
+						2=>($b->y>$p->y ? self::MOVE_UP : self::MOVE_DOWN),
+						3=>false,
+						4=>0,
+						5=>false,
+						6=>false,
+						7=>false,
+						8=>false,
+						9=>$this->getliftsize($lv, $v3),
+						10=>0,
+					];
+				} elseif ( $this->movinglift[$hash][3] !== false ) {
+					$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
+				} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
+					$this->movinglift[$hash][2] = self::MOVE_STOP;
+					$this->movinglift[$hash][3] = 40;
+					$p->sendMessage(TF::GREEN . '> 已停止升降機');
 				}
 			}
 		} elseif ( $id === 123 or $id === 124 ) {
