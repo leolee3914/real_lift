@@ -478,6 +478,9 @@ class Main extends PluginBase implements Listener{
 			return;
 		}
 		$p = $e->getPlayer();
+		if ( $p->isSneaking() ) {
+			return;
+		}
 		$n = $p->getName();
 		$b = $e->getBlock();
 		$lv = $b->getLevel();
