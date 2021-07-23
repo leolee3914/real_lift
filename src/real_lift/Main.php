@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace real_lift;
 
-use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
