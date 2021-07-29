@@ -154,7 +154,7 @@ class Main extends PluginBase implements Listener{
 					}
 				}
 			}
-			$issetqueue = isset($this->queue[$hash]) and count($this->queue[$hash]) > 0;
+			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
 			if ( $data[7] ) {
 				if ( $data[8] !== false ) {
 					$data[8] = false;
