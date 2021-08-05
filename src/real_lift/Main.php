@@ -21,7 +21,6 @@ use pocketmine\tile\Sign;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat as TF;
 use function count;
-use function is_array;
 
 class Main extends PluginBase implements Listener{
 	const MOVE_UP = 0;
@@ -113,7 +112,21 @@ class Main extends PluginBase implements Listener{
 
 	function move_lift () {
 		foreach ( $this->movinglift as $hash=>&$data ) {
-			//hash => [ 0=>now Position, 1=>[entityID=>Player|Entity], 2=>(int)status, 3=>waiting, 4=>(int)moved, 5=>(bool)playsound,6=>(int)target-y,7=>(bool)unset,8=>queue,9=>lift_size,10=>fast_mode ]
+			/**
+			 * hash => [
+			 *  0=>(Position),
+			 *  1=>(Player|Entity[])  entityID => Player|Entity,
+			 *  2=>(int const)up|down|stop,
+			 *  3=>(bool)waiting,
+			 *  4=>(bool)is moved,
+			 *  5=>(bool)playsound,
+			 *  6=>(int)target-y,
+			 *  7=>(bool)unset,
+			 *  // 8
+			 *  9=>int lift_size: 1/3/5,
+			 *  10=>(bool)fast_mode
+			 * ]
+			 */
 			$pos = $data[0];
 			$lv = $pos->getLevel();
 			if ( $lv->isClosed() or !$this->islift($lv, $pos) ) {
@@ -156,32 +169,24 @@ class Main extends PluginBase implements Listener{
 			}
 			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
 			if ( $data[7] ) {
-				if ( $data[8] !== false ) {
-					$data[8] = false;
-					if ( isset($this->queue[$hash]) ) {
-						$dt = array_shift($this->queue[$hash]);
-						if ( is_array($dt) ) {
-							$bid = $lv->getBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z);
-							if ( $bid === 124 ) {
-								$lv->setBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z, 123);
-							}
+				if ( $issetqueue ) {
+					$dt = array_shift($this->queue[$hash]);
+					if ( $dt !== null ) {
+						if ( $lv->getBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z) === 124 ) {
+							$lv->setBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z, 123);
 						}
 					}
-				}
-				if ( $issetqueue ) {
 					foreach ( $this->queue[$hash] as $xyzhash=>$dt ) {
 						if ( $pos->y > $dt[1] ) {
 							$data[2] = self::MOVE_DOWN;
 							$data[3] = false;
 							$data[6] = $dt[1];
 							$data[7] = false;
-							$data[8] = $dt;
 						} elseif ( $pos->y < $dt[1] ) {
 							$data[2] = self::MOVE_UP;
 							$data[3] = false;
 							$data[6] = $dt[1];
 							$data[7] = false;
-							$data[8] = $dt;
 						}
 						$data[10] = true;
 						break;
@@ -246,7 +251,7 @@ class Main extends PluginBase implements Listener{
 			if ( $data[10] === true ) {
 				$switchblock = $this->switchblock($data, $data[2], $data[6]-$pos->y, $pls, $addmin, $addmax);
 				if ( $switchblock ) {
-					++$data[4];
+					$data[4] = true;
 					continue;
 				} else {
 					$data[10] = 0;
@@ -284,7 +289,7 @@ class Main extends PluginBase implements Listener{
 				$canmove = false;
 			}
 			if ( $stop ) {
-				if ( $data[4] === 0 ) {
+				if ( $data[4] === false ) {
 					$data[7] = true;
 					continue;
 				}
@@ -319,8 +324,8 @@ class Main extends PluginBase implements Listener{
 							$p->teleport($p->add(0,1));
 						}
 					}
-					$pos->y++;
-					++$data[4];
+					++$pos->y;
+					$data[4] = true;
 				} elseif ( $data[2] === self::MOVE_DOWN ) {
 					$ii = 0;
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
@@ -338,8 +343,8 @@ class Main extends PluginBase implements Listener{
 							$p->teleport($p->add(0,-1));
 						}
 					}
-					$pos->y--;
-					++$data[4];
+					--$pos->y;
+					$data[4] = true;
 				}
 			}
 		}
@@ -429,11 +434,11 @@ class Main extends PluginBase implements Listener{
 	}
 
 	function handleForm ( Player $p, $data, int $formId ) {
-		$n = $p->getName();
-		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
+		if ( $data === null ) {
 			return;
 		}
-		if ( $data === null ) {
+		$n = $p->getName();
+		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
 			return;
 		}
 		switch ( $formId ) {
@@ -456,11 +461,11 @@ class Main extends PluginBase implements Listener{
 						1=>[],
 						2=>($this->floorlist[$n][$data][1]>$v3->y ? self::MOVE_UP : self::MOVE_DOWN),
 						3=>false,
-						4=>0,
+						4=>false,
 						5=>false,
 						6=>$this->floorlist[$n][$data][1],
 						7=>false,
-						8=>false,
+
 						9=>$this->getliftsize($lv, $v3),
 						10=>$fast_mode,
 					];
@@ -534,11 +539,11 @@ class Main extends PluginBase implements Listener{
 						1=>[],
 						2=>($b->y>$p->y ? self::MOVE_UP : self::MOVE_DOWN),
 						3=>false,
-						4=>0,
+						4=>false,
 						5=>false,
 						6=>false,
 						7=>false,
-						8=>false,
+
 						9=>$this->getliftsize($lv, $v3),
 						10=>0,
 					];
@@ -600,11 +605,11 @@ class Main extends PluginBase implements Listener{
 								1=>[],
 								2=>self::MOVE_STOP,
 								3=>false,
-								4=>0,
+								4=>false,
 								5=>false,
 								6=>false,
 								7=>true,
-								8=>false,
+
 								9=>$this->getliftsize($lv, $v3),
 								10=>true,
 							];
@@ -618,14 +623,13 @@ class Main extends PluginBase implements Listener{
 						}
 						#$xyzhash = $x . ';' . $btyy . ';' . $z;
 						$xyzhash = $btyy;
-						if ( !isset($this->queue[$hash][$xyzhash]) ) {
-							// xyzhash=>[ 0=>Position,1=>btyy,2=>setblock_timer ]
-							$this->queue[$hash][$xyzhash] = [
-								0=>$b->asPosition(),
-								1=>$btyy,
-								2=>0,
-							];
-						}
+
+						// xyzhash=>[ 0=>Position,1=>btyy,2=>setblock_timer ]
+						$this->queue[$hash][$xyzhash] ??= [
+							0=>$b->asPosition(),
+							1=>$btyy,
+							2=>0,
+						];
 						return $esetcancell;
 					}
 				}
@@ -656,7 +660,7 @@ class Main extends PluginBase implements Listener{
 		$minz = $v3->z+$addmin;
 		$maxz = $v3->z+$addmax+1;
 		foreach ( ($this->tp_entity ? $lv->getEntities() : $lv->getPlayers()) as $pl ) {
-			$ispl = $pl instanceof Player;
+			$ispl = ($pl instanceof Player);
 			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x >= $minx and $pl->x < $maxx and $pl->z >= $minz and $pl->z < $maxz and $pl->y >= $miny and $pl->y < $maxy ) {
 				$this->movinglift[$hash][1][$pl->getId()] = $pl;
 			}
@@ -664,7 +668,7 @@ class Main extends PluginBase implements Listener{
 	}
 
 	function getliftsize ( Level $lv, Vector3 $pos ) {
-		if ( $this->islift2_9($lv, $pos ) ) {
+		if ( $this->islift2_9($lv, $pos) ) {
 			if ( $this->islift2_25($lv, true, $pos) ) {
 				return 5;
 			}
