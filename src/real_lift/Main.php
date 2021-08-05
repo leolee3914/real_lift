@@ -130,13 +130,13 @@ class Main extends PluginBase implements Listener{
 			$pos = $data[0];
 			$lv = $pos->getLevel();
 			if ( $lv->isClosed() or !$this->islift($lv, $pos) ) {
-				if ( isset($this->queue[$hash]) ) {
-					unset($this->queue[$hash]);
-				}
+				unset($this->queue[$hash]);
 				unset($this->movinglift[$hash]);
 				continue;
 			}
-			if ( isset($this->queue[$hash]) and count($this->queue[$hash]) > 0 ) {
+
+			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
+			if ( $issetqueue ) {
 				foreach ( $this->queue[$hash] as &$dt2 ) {
 					if ( --$dt2[2] <= 0 ) {
 						$bid = $lv->getBlockIdAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z);
@@ -167,7 +167,7 @@ class Main extends PluginBase implements Listener{
 					}
 				}
 			}
-			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
+
 			if ( $data[7] ) {
 				if ( $issetqueue ) {
 					$first = true;
@@ -196,9 +196,7 @@ class Main extends PluginBase implements Listener{
 					}
 				}
 				if ( $data[7] ) {
-					if ( isset($this->queue[$hash]) ) {
-						unset($this->queue[$hash]);
-					}
+					unset($this->queue[$hash]);
 					unset($this->movinglift[$hash]);
 				}
 				continue;
@@ -304,9 +302,7 @@ class Main extends PluginBase implements Listener{
 			if ( $canmove ) {
 				$liftsize = $this->getliftsize($lv, $pos);
 				if ( $liftsize !== $data[9] ) {
-					if ( isset($this->queue[$hash]) ) {
-						unset($this->queue[$hash]);
-					}
+					unset($this->queue[$hash]);
 					unset($this->movinglift[$hash]);
 					continue;
 				}
