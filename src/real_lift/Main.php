@@ -122,7 +122,7 @@ class Main extends PluginBase implements Listener{
 			 *  5=>(bool)playsound,
 			 *  6=>(int)target-y,
 			 *  7=>(bool)unset,
-			 *  // 8
+			 *  8=>(bool)hasQueue,
 			 *  9=>int lift_size: 1/3/5,
 			 *  10=>(bool)fast_mode
 			 * ]
@@ -172,7 +172,7 @@ class Main extends PluginBase implements Listener{
 				if ( $issetqueue ) {
 					$first = true;
 					foreach ( $this->queue[$hash] as $lift_y=>$dt ) {
-						if ( $first === true ) {
+						if ( $first === true and $data[8] === true ) {
 							$first = false;
 							if ( $lv->getBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z) === 124 ) {
 								$lv->setBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z, 123);
@@ -184,11 +184,13 @@ class Main extends PluginBase implements Listener{
 								$data[3] = false;
 								$data[6] = $dt[1];
 								$data[7] = false;
+								$data[8] = true;
 							} elseif ( $pos->y < $dt[1] ) {
 								$data[2] = self::MOVE_UP;
 								$data[3] = false;
 								$data[6] = $dt[1];
 								$data[7] = false;
+								$data[8] = true;
 							}
 							$data[10] = true;
 							break;
@@ -462,7 +464,7 @@ class Main extends PluginBase implements Listener{
 						5=>false,
 						6=>$this->floorlist[$n][$data][1],
 						7=>false,
-
+						8=>false,
 						9=>$this->getliftsize($lv, $v3),
 						10=>$fast_mode,
 					];
@@ -540,7 +542,7 @@ class Main extends PluginBase implements Listener{
 						5=>false,
 						6=>false,
 						7=>false,
-
+						8=>false,
 						9=>$this->getliftsize($lv, $v3),
 						10=>0,
 					];
@@ -606,7 +608,7 @@ class Main extends PluginBase implements Listener{
 								5=>false,
 								6=>false,
 								7=>true,
-
+								8=>false,
 								9=>$this->getliftsize($lv, $v3),
 								10=>true,
 							];
