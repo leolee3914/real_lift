@@ -170,26 +170,29 @@ class Main extends PluginBase implements Listener{
 			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
 			if ( $data[7] ) {
 				if ( $issetqueue ) {
-					$dt = array_shift($this->queue[$hash]);
-					if ( $dt !== null ) {
-						if ( $lv->getBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z) === 124 ) {
-							$lv->setBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z, 123);
+					$first = true;
+					foreach ( $this->queue[$hash] as $lift_y=>$dt ) {
+						if ( $first === true ) {
+							$first = false;
+							if ( $lv->getBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z) === 124 ) {
+								$lv->setBlockIdAt($dt[0]->x,$dt[0]->y,$dt[0]->z, 123);
+							}
+							unset($this->queue[$hash][$lift_y]);
+						} else {
+							if ( $pos->y > $dt[1] ) {
+								$data[2] = self::MOVE_DOWN;
+								$data[3] = false;
+								$data[6] = $dt[1];
+								$data[7] = false;
+							} elseif ( $pos->y < $dt[1] ) {
+								$data[2] = self::MOVE_UP;
+								$data[3] = false;
+								$data[6] = $dt[1];
+								$data[7] = false;
+							}
+							$data[10] = true;
+							break;
 						}
-					}
-					foreach ( $this->queue[$hash] as $xyzhash=>$dt ) {
-						if ( $pos->y > $dt[1] ) {
-							$data[2] = self::MOVE_DOWN;
-							$data[3] = false;
-							$data[6] = $dt[1];
-							$data[7] = false;
-						} elseif ( $pos->y < $dt[1] ) {
-							$data[2] = self::MOVE_UP;
-							$data[3] = false;
-							$data[6] = $dt[1];
-							$data[7] = false;
-						}
-						$data[10] = true;
-						break;
 					}
 				}
 				if ( $data[7] ) {
