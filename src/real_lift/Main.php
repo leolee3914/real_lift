@@ -405,10 +405,8 @@ class Main extends PluginBase implements Listener{
 
 	function sendform ( Player $p, int $formId ) {
 		$n = $p->getName();
-		if ( isset($this->sendformtime[$n]) ) {
-			if ( $this->sendformtime[$n] > microtime(true) ) {
-				return;
-			}
+		if ( isset($this->sendformtime[$n]) and $this->sendformtime[$n] > microtime(true) ) {
+			return;
 		}
 		$this->sendformtime[$n] = microtime(true)+0.7;
 		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
