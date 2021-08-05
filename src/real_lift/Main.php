@@ -157,7 +157,7 @@ class Main extends PluginBase implements Listener{
 									$pk->particleName = $pname;
 									$p->dataPacket($pk);
 								};
-								foreach ( $lv->getPlayers() as $pl ) {
+								foreach ( $lv->getViewersForPosition($dt2[0]) as $pl ) {
 									$f_addParticle($pl, $dt2[0]->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle');
 								}
 								//////////////////////////////
@@ -208,7 +208,7 @@ class Main extends PluginBase implements Listener{
 					$data[7] = true;
 				}
 				if ( $data[3] === 20 and $data[5] ) {
-					foreach ( $lv->getPlayers() as $pl ) {
+					foreach ( $lv->getViewersForPosition($pos) as $pl ) {
 						$this->playsound($pos, 'random.orb', $pl, 1, 2);
 					}
 				}
@@ -558,7 +558,7 @@ class Main extends PluginBase implements Listener{
 			if ( !$p->isSneaking() ) {
 				$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancell ) {
-					foreach ( $lv->getPlayers() as $pl ) {
+					foreach ( $lv->getViewersForPosition($b) as $pl ) {
 						$this->playsound($b, 'random.click', $pl, 1, 0.6);
 					}
 					$e->setCancelled(true);
@@ -571,7 +571,7 @@ class Main extends PluginBase implements Listener{
 					$e->setCancelled(true);
 					$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_SIGN);
 					if ( $cancell ) {
-						foreach ( $lv->getPlayers() as $pl ) {
+						foreach ( $lv->getViewersForPosition($b) as $pl ) {
 							$this->playsound($b, 'random.click', $pl, 1, 0.6);
 						}
 					}
@@ -658,7 +658,7 @@ class Main extends PluginBase implements Listener{
 		$maxy = $v3->y;
 		$minz = $v3->z+$addmin;
 		$maxz = $v3->z+$addmax+1;
-		foreach ( ($this->tp_entity ? $lv->getEntities() : $lv->getPlayers()) as $pl ) {
+		foreach ( ($this->tp_entity ? $lv->getEntities() : $lv->getViewersForPosition($v3)) as $pl ) {
 			$ispl = ($pl instanceof Player);
 			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x >= $minx and $pl->x < $maxx and $pl->z >= $minz and $pl->z < $maxz and $pl->y >= $miny and $pl->y < $maxy ) {
 				$this->movinglift[$hash][1][$pl->getId()] = $pl;
