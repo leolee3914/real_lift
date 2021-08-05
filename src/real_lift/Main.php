@@ -137,7 +137,7 @@ class Main extends PluginBase implements Listener{
 				continue;
 			}
 			if ( isset($this->queue[$hash]) and count($this->queue[$hash]) > 0 ) {
-				foreach ( $this->queue[$hash] as $xyzhash=>&$dt2 ) {
+				foreach ( $this->queue[$hash] as &$dt2 ) {
 					if ( --$dt2[2] <= 0 ) {
 						$bid = $lv->getBlockIdAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z);
 						switch ( $bid ) {
@@ -778,7 +778,7 @@ class Main extends PluginBase implements Listener{
 		}
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
-			foreach ( $this->movinglift as $hash=>$data ) {
+			foreach ( $this->movinglift as $data ) {
 				if ( isset($data[1][$entity->getId()]) ) {
 					$e->setCancelled(true);
 					return;
