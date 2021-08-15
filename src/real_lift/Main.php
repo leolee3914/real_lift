@@ -665,7 +665,6 @@ class Main extends PluginBase implements Listener{
 
 	function islift2 ( Level $lv, $x, $y=0, $z=0 ) {
 		if ( $x instanceof Vector3 ) {
-			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
 
@@ -676,7 +675,6 @@ class Main extends PluginBase implements Listener{
 
 	function islift ( Level $lv, $x, $y=0, $z=0, $bid=41 ) {
 		if ( $x instanceof Vector3 ) {
-			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
 
@@ -697,7 +695,6 @@ class Main extends PluginBase implements Listener{
 			return false;
 		}
 		if ( $x instanceof Vector3 ) {
-			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
 
@@ -720,7 +717,6 @@ class Main extends PluginBase implements Listener{
 			return false;
 		}
 		if ( $x instanceof Vector3 ) {
-			$x = $x->floor();
 			$y = $x->y;
 			$z = $x->z;
 
