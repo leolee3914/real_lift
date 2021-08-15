@@ -110,6 +110,14 @@ class Main extends PluginBase implements Listener{
 		return $pk;
 	}
 
+	static function createParticlePacket ( Vector3 $pos, string $pname ) {
+		$pk = new SpawnParticleEffectPacket();
+		$pk->position = $pos;
+		$pk->particleName = $pname;
+
+		return $pk;
+	}
+
 	function move_lift () {
 		foreach ( $this->movinglift as $hash=>&$data ) {
 			/**
@@ -149,18 +157,7 @@ class Main extends PluginBase implements Listener{
 								break;
 							case 63;
 							case 68;
-								##$lv->addParticle(new \pocketmine\level\particle\RedstoneParticle($dt2[0]->add(0.5,0.5,0.5), 2));
-								//////////////////////////////
-								$f_addParticle = static function ( Player $p, Vector3 $pos, string $pname ) {
-									$pk = new SpawnParticleEffectPacket();
-									$pk->position = $pos;
-									$pk->particleName = $pname;
-									$p->dataPacket($pk);
-								};
-								foreach ( $lv->getViewersForPosition($dt2[0]) as $pl ) {
-									$f_addParticle($pl, $dt2[0]->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle');
-								}
-								//////////////////////////////
+								$lv->broadcastPacketToViewers($dt2[0], self::createParticlePacket($dt2[0]->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
 								break;
 						}
 						$dt2[2] = 6;
