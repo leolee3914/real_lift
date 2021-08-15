@@ -95,7 +95,7 @@ class Main extends PluginBase implements Listener{
 		unset($this->sendformtime[$n]);
 	}
 
-	function playsound ( Vector3 $v3, string $sound, ?Player $p = null, float $vol = 1.0, float $pitch = 1.0 ) {
+	static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) {
 		$pk = new PlaySoundPacket();
 		$pk->soundName = $sound;
 		$pk->x = $v3->x;
@@ -103,10 +103,7 @@ class Main extends PluginBase implements Listener{
 		$pk->z = $v3->z;
 		$pk->volume = $vol;
 		$pk->pitch = $pitch;
-		if ( $p !== null ) {
-			$p->dataPacket($pk);
-			return;
-		}
+
 		return $pk;
 	}
 
@@ -205,9 +202,7 @@ class Main extends PluginBase implements Listener{
 					$data[7] = true;
 				}
 				if ( $data[3] === 20 and $data[5] ) {
-					foreach ( $lv->getViewersForPosition($pos) as $pl ) {
-						$this->playsound($pos, 'random.orb', $pl, 1, 2);
-					}
+					$lv->broadcastPacketToViewers($pos, self::createPlaySoundPacket($pos, 'random.orb', 1, 2));
 				}
 				continue;
 			}
@@ -555,9 +550,7 @@ class Main extends PluginBase implements Listener{
 			if ( !$p->isSneaking() ) {
 				$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancell ) {
-					foreach ( $lv->getViewersForPosition($b) as $pl ) {
-						$this->playsound($b, 'random.click', $pl, 1, 0.6);
-					}
+					$lv->broadcastPacketToViewers($b, self::createPlaySoundPacket($b, 'random.click', 1, 0.6));
 					$e->setCancelled(true);
 				}
 			}
@@ -568,9 +561,7 @@ class Main extends PluginBase implements Listener{
 					$e->setCancelled(true);
 					$cancell = $this->checkqueue($p, $b, self::QUEUE_CHECK_XZ_SIGN);
 					if ( $cancell ) {
-						foreach ( $lv->getViewersForPosition($b) as $pl ) {
-							$this->playsound($b, 'random.click', $pl, 1, 0.6);
-						}
+						$lv->broadcastPacketToViewers($b, self::createPlaySoundPacket($b, 'random.click', 1, 0.6));
 					}
 				}
 			}
