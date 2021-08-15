@@ -756,13 +756,14 @@ class Main extends PluginBase implements Listener{
 	}
 
 	function pvp ( EntityDamageEvent $e ) {
+		$entity = $e->getEntity();
 		if ( $e->isCancelled() ) {
 			return;
 		}
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
 			foreach ( $this->movinglift as $data ) {
-				if ( isset($data[1][$e->getEntity()->getId()]) ) {
+				if ( isset($data[1][$entity->getId()]) ) {
 					$e->setCancelled(true);
 					return;
 				}
