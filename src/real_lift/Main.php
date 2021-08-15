@@ -622,15 +622,17 @@ class Main extends PluginBase implements Listener{
 	}
 
 	function liftcheckplayer ( Level $lv, $hash ) {
-		if ( !isset($this->movinglift[$hash]) ) {
+		$lift = ($this->movinglift[$hash] ?? null);
+		if ( $lift === null ) {
 			return;
 		}
-		$this->movinglift[$hash][1] = [];
-		$v3 = $this->movinglift[$hash][0];
-		if ( $this->movinglift[$hash][9] === 5 ) {
+
+		$inLiftEntities = [];
+		$v3 = $lift[0];
+		if ( $lift[9] === 5 ) {
 			$addmin = -2;
 			$addmax = 2;
-		} elseif ( $this->movinglift[$hash][9] === 3 ) {
+		} elseif ( $lift[9] === 3 ) {
 			$addmin = -1;
 			$addmax = 1;
 		} else {
@@ -644,10 +646,11 @@ class Main extends PluginBase implements Listener{
 		$maxz = $v3->z+$addmax+1;
 		foreach ( ($this->tp_entity ? $lv->getEntities() : $lv->getViewersForPosition($v3)) as $pl ) {
 			$ispl = ($pl instanceof Player);
-			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x >= $minx and $pl->x < $maxx and $pl->z >= $minz and $pl->z < $maxz and $pl->y >= $miny and $pl->y < $maxy ) {
-				$this->movinglift[$hash][1][$pl->getId()] = $pl;
+			if ( (!$ispl or $pl->getGamemode() !== 3) and $pl->x > $minx and $pl->x < $maxx and $pl->z > $minz and $pl->z < $maxz and $pl->y > $miny and $pl->y < $maxy ) {
+				$inLiftEntities[$pl->getId()] = $pl;
 			}
 		}
+		$this->movinglift[$hash][1] = $inLiftEntities;
 	}
 
 	function getliftsize ( Level $lv, Vector3 $pos ) {
