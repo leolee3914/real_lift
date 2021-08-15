@@ -761,9 +761,9 @@ class Main extends PluginBase implements Listener{
 		}
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
-			$entity = $e->getEntity();
+			$entityId = $e->getEntity()->getId();
 			foreach ( $this->movinglift as $data ) {
-				if ( isset($data[1][$entity->getId()]) ) {
+				if ( isset($data[1][$entityId]) ) {
 					$e->setCancelled(true);
 					return;
 				}
