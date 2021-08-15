@@ -53,9 +53,8 @@ class Main extends PluginBase implements Listener{
 	var $sendformtime = [];
 
 	function onEnable(){
-		if(!static::$instance instanceof \real_lift\Main ){
-			static::$instance = $this;
-		}
+		static::$instance = $this;
+
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
 		@mkdir($this->getDataFolder());
@@ -311,7 +310,6 @@ class Main extends PluginBase implements Listener{
 							$lv->setBlockIdAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $b4142);
 						}
 					}
-					$v3y = $pos->y-3;
 					foreach ( $pls as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->add(0,1));
@@ -330,7 +328,6 @@ class Main extends PluginBase implements Listener{
 							$lv->setBlockIdAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $b4142);
 						}
 					}
-					$v3y = $pos->y-3;
 					foreach ( $pls as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->add(0,-1));
@@ -608,7 +605,6 @@ class Main extends PluginBase implements Listener{
 						if ( !isset($this->queue[$hash]) ) {
 							$this->queue[$hash] = [];
 						}
-						#$xyzhash = $x . ';' . $btyy . ';' . $z;
 						$xyzhash = $btyy;
 
 						// xyzhash=>[ 0=>Position,1=>btyy,2=>setblock_timer ]
