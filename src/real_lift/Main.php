@@ -340,7 +340,7 @@ class Main extends PluginBase implements Listener{
 		}
 	}
 
-	function switchblock ( &$data, $updown=self::MOVE_STOP, $h=0, $pls, $addmin=0, $addmax=0 ) {
+	function switchblock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$lv = $pos->getLevel();
 		if ( $updown === self::MOVE_UP ) {
