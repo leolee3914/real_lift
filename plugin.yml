@@ -1,8 +1,8 @@
 ## https://github.com/leolee3914/real_lift
 name: real_lift
 main: real_lift\Main
-version: 1.0.1
-api: [1.0.0, 3.1.0]
+version: 2.0.0
+api: [4.0.0]
 ## https://github.com/leolee3914/real_lift
 load: POSTWORLD
 author: Leolee3914
