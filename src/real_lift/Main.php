@@ -567,7 +567,7 @@ class Main extends PluginBase implements Listener{
 
 	function checkqueue ( Player $p, Position $b, array $checkxz ) {
 		$esetcancell = false;
-		$lv = $p->getLevel();
+		$lv = $b->getLevel();
 		$lvh = $lv->getWorldHeight();
 		if ( $b->y >= 2 and $b->y <= ($lvh-4) ) {
 			foreach ( $checkxz as $xz ) {
