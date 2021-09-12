@@ -64,7 +64,7 @@
 ### config.yml
 multiple_floors_mode: bool 是否開啟選擇樓層功能<br>
 enable3x3: bool 啟用3x3的升降機 (須先開啟選擇樓層功能)<br>
-enable5x5: bool 啟用5x5的升降機 (須先開啟選擇樓層功能)<br>
+enable5x5: bool 啟用5x5的升降機；由於性能關係，不建議啟用此選項 (須先開啟選擇樓層功能)<br>
 tp_entity: bool 移動升降機中的所有實體(Entity)<br>
 
 ## 指令
