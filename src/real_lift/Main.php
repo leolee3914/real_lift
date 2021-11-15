@@ -14,6 +14,7 @@ use pocketmine\form\Form as PMForm;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\PlaySoundPacket;
 use pocketmine\network\mcpe\protocol\SpawnParticleEffectPacket;
+use pocketmine\player\GameMode;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
@@ -648,7 +649,7 @@ class Main extends PluginBase implements Listener{
 		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($v3)) as $pl ) {
 			$ispl = ($pl instanceof Player);
 			$pos = $pl->getPosition();
-			if ( (!$ispl or $pl->getGamemode() !== 3) and $pos->x > $minx and $pos->x < $maxx and $pos->z > $minz and $pos->z < $maxz and $pos->y > $miny and $pos->y < $maxy ) {
+			if ( (!$ispl or !$pl->getGamemode()->equals(GameMode::SPECTATOR())) and $pos->x > $minx and $pos->x < $maxx and $pos->z > $minz and $pos->z < $maxz and $pos->y > $miny and $pos->y < $maxy ) {
 				$inLiftEntities[$pl->getId()] = $pl;
 			}
 		}
