@@ -85,9 +85,7 @@ class Main extends PluginBase implements Listener {
 		$this->enable5x5 = (bool) $config->enable5x5;
 		$this->tp_entity = (bool) $config->tp_entity;
 
-		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
-			$this->move_lift();
-		}), 1);
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(\Closure::fromCallable([$this, 'move_lift'])), 1);
 	}
 
 	public function pq ( PlayerQuitEvent $e ) {
