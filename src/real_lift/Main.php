@@ -492,7 +492,7 @@ class Main extends PluginBase implements Listener {
 		$b_pos = $b->getPosition();
 		$world = $b_pos->getWorld();
 		$id = $b->getId();
-		if ( $id === 41 ) {
+		if ( $id === BlockLegacyIds::GOLD_BLOCK ) {
 			$v3 = $b_pos->asVector3();
 			if ( $b_pos->y < $p->getPosition()->y ) {
 				$v3->y += 5;
@@ -677,10 +677,10 @@ class Main extends PluginBase implements Listener {
 
 			$x = $x->x;
 		}
-		return $this->islift($world, $x, $y, $z, 42);
+		return $this->islift($world, $x, $y, $z, BlockLegacyIds::IRON_BLOCK);
 	}
 
-	public function islift ( World $world, $x, $y=0, $z=0, $bid=41 ) {
+	public function islift ( World $world, $x, $y=0, $z=0, $bid=BlockLegacyIds::GOLD_BLOCK ) {
 		if ( $x instanceof Vector3 ) {
 			$y = $x->y;
 			$z = $x->z;
