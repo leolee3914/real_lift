@@ -7,6 +7,7 @@ namespace real_lift;
 use pocketmine\block\BaseSign;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -159,10 +160,10 @@ class Main extends PluginBase implements Listener {
 						} else {
 							switch ( $block->getId() ) {
 								case BlockLegacyIds::REDSTONE_LAMP;
-									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, self::$BlockFactory->get(124, 0), false);
+									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, VanillaBlocks::REDSTONE_LAMP()->setPowered(true), false);
 									break;
 								case BlockLegacyIds::LIT_REDSTONE_LAMP;
-									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, self::$BlockFactory->get(123, 0), false);
+									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, VanillaBlocks::REDSTONE_LAMP(), false);
 									break;
 							}
 						}
@@ -178,7 +179,7 @@ class Main extends PluginBase implements Listener {
 						if ( $first === true and $data[8] === true ) {
 							$first = false;
 							if ( $world->getBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, false, false)->getId() === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
-								$world->setBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, self::$BlockFactory->get(123, 0), false);
+								$world->setBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, VanillaBlocks::REDSTONE_LAMP(), false);
 							}
 							unset($this->queue[$hash][$lift_y]);
 						} else {
