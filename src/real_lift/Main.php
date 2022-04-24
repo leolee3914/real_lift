@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace real_lift;
 
 use pocketmine\block\BaseSign;
-use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\event\entity\EntityDamageEvent;
@@ -58,8 +57,6 @@ class Main extends PluginBase implements Listener {
 
 	public array $sendformtime = [];
 
-	static $BlockFactory;
-
 	public function onEnable () : void {
 		self::$instance = $this;
 
@@ -91,8 +88,6 @@ class Main extends PluginBase implements Listener {
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
 			$this->move_lift();
 		}), 1);
-
-		self::$BlockFactory = BlockFactory::getInstance();
 	}
 
 	public function pq ( PlayerQuitEvent $e ) {
