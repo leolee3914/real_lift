@@ -45,15 +45,16 @@ class Main extends PluginBase implements Listener {
 		return self::$instance;
 	}
 
-	var $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
+	public bool $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
 
-	var $movinglift = [];
+	public array $movinglift = [];
 
-	var $queue = [];
+	public array $queue = [];
 
-	var $floorlist = [];
-	var $floorlistliftpos = [];
-	var $sendformtime = [];
+	public array $floorlist = [];
+	public array $floorlistliftpos = [];
+
+	public array $sendformtime = [];
 
 	static $BlockFactory;
 
