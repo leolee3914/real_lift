@@ -313,12 +313,13 @@ class Main extends PluginBase implements Listener {
 				if ( $data[2] === self::MOVE_UP ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
+					$glassBlock = VanillaBlocks::GLASS();
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, $setBlock, false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airid[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
 						}
 					}
@@ -332,10 +333,11 @@ class Main extends PluginBase implements Listener {
 				} elseif ( $data[2] === self::MOVE_DOWN ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
+					$glassBlock = VanillaBlocks::GLASS();
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airid[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
@@ -385,14 +387,15 @@ class Main extends PluginBase implements Listener {
 		foreach ( $pls as $p ) {
 			$p->teleport($p->getPosition()->add(0, $h, 0));
 		}
+		$airBlock = VanillaBlocks::AIR();
+		$glassBlock = VanillaBlocks::GLASS();
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addy=($pos->y-5);$addy<=$pos->y;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, self::$BlockFactory->get(array_shift($airid)??0, 0), false);
+					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, array_shift($airid) === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 				}
 			}
 		}
-		$airBlock = VanillaBlocks::AIR();
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 				$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
