@@ -24,8 +24,8 @@ use pocketmine\world\Position;
 use pocketmine\world\World;
 use function count;
 
-class Main extends PluginBase implements Listener{
-	
+class Main extends PluginBase implements Listener {
+
 	const MOVE_UP = 0;
 	const MOVE_DOWN = 1;
 	const MOVE_STOP = 2;
