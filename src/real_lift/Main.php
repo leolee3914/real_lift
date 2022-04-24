@@ -397,10 +397,12 @@ class Main extends PluginBase implements Listener {
 			for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 				$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h, $pos->z+$addz, $setBlock, false);
+
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-1, $pos->z+$addz, $airBlock, false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-2, $pos->z+$addz, $airBlock, false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-3, $pos->z+$addz, $airBlock, false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-4, $pos->z+$addz, $airBlock, false);
+
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-5, $pos->z+$addz, $setBlock, false);
 			}
 		}
