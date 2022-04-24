@@ -271,7 +271,7 @@ class Main extends PluginBase implements Listener {
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getId();
-						if ( $stop === true or ($airid2 !== 0 and $airid2 !== 20) ) {
+						if ( $stop === true or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -284,7 +284,7 @@ class Main extends PluginBase implements Listener {
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getId();
-						if ( $stop === true or ($airid2 !== 0 and $airid2 !== 20) ) {
+						if ( $stop === true or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -376,7 +376,7 @@ class Main extends PluginBase implements Listener {
 			for ( $addy=$mixy;$addy<=$maxy;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 					$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $addy, $pos->z+$addz, false, false)->getId();
-					if ( $airid2 !== 0 and $airid2 !== 20 ) {
+					if ( $airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS ) {
 						return false;
 					}
 				}
