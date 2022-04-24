@@ -6,6 +6,7 @@ namespace real_lift;
 
 use pocketmine\block\BaseSign;
 use pocketmine\block\BlockFactory;
+use pocketmine\block\BlockLegacyIds;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -157,10 +158,10 @@ class Main extends PluginBase implements Listener {
 							$world->broadcastPacketToViewers($dt2[0], self::createParticlePacket($dt2[0]->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
 						} else {
 							switch ( $block->getId() ) {
-								case 123;
+								case BlockLegacyIds::REDSTONE_LAMP;
 									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, self::$BlockFactory->get(124, 0), false);
 									break;
-								case 124;
+								case BlockLegacyIds::LIT_REDSTONE_LAMP;
 									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, self::$BlockFactory->get(123, 0), false);
 									break;
 							}
@@ -176,7 +177,7 @@ class Main extends PluginBase implements Listener {
 					foreach ( $this->queue[$hash] as $lift_y=>$dt ) {
 						if ( $first === true and $data[8] === true ) {
 							$first = false;
-							if ( $world->getBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, false, false)->getId() === 124 ) {
+							if ( $world->getBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, false, false)->getId() === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
 								$world->setBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, self::$BlockFactory->get(123, 0), false);
 							}
 							unset($this->queue[$hash][$lift_y]);
@@ -553,7 +554,7 @@ class Main extends PluginBase implements Listener {
 					$p->sendMessage(TF::GREEN . '> 已停止升降機');
 				}
 			}
-		} elseif ( $id === 123 or $id === 124 ) {
+		} elseif ( $id === BlockLegacyIds::REDSTONE_LAMP or $id === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
 			if ( !$p->isSneaking() ) {
 				$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancel ) {
