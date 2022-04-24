@@ -312,10 +312,11 @@ class Main extends PluginBase implements Listener {
 				}
 				if ( $data[2] === self::MOVE_UP ) {
 					$ii = 0;
+					$airBlock = VanillaBlocks::AIR();
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
@@ -330,12 +331,13 @@ class Main extends PluginBase implements Listener {
 					$data[4] = true;
 				} elseif ( $data[2] === self::MOVE_DOWN ) {
 					$ii = 0;
+					$airBlock = VanillaBlocks::AIR();
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, $setBlock, false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
 						}
 					}
@@ -390,14 +392,15 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		}
+		$airBlock = VanillaBlocks::AIR();
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 				$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h, $pos->z+$addz, $setBlock, false);
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h-1, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h-2, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h-3, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h-4, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h-1, $pos->z+$addz, $airBlock, false);
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h-2, $pos->z+$addz, $airBlock, false);
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h-3, $pos->z+$addz, $airBlock, false);
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h-4, $pos->z+$addz, $airBlock, false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-5, $pos->z+$addz, $setBlock, false);
 			}
 		}
