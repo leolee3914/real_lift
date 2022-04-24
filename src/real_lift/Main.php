@@ -39,9 +39,9 @@ class Main extends PluginBase implements Listener {
 		[3,3],[-3,3],[3,-3],[-3,-3],
 	];
 
-	private static $instance;
+	private static self $instance;
 
-	public static function getInstance(){
+	public static function getInstance () : self {
 		return self::$instance;
 	}
 
