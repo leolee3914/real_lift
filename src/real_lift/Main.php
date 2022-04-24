@@ -58,7 +58,7 @@ class Main extends PluginBase implements Listener {
 
 	static $BlockFactory;
 
-	function onEnable () : void {
+	public function onEnable () : void {
 		self::$instance = $this;
 
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
@@ -93,7 +93,7 @@ class Main extends PluginBase implements Listener {
 		self::$BlockFactory = BlockFactory::getInstance();
 	}
 
-	function pq ( PlayerQuitEvent $e ) {
+	public function pq ( PlayerQuitEvent $e ) {
 		$p = $e->getPlayer();
 		$n = $p->getName();
 
@@ -102,7 +102,7 @@ class Main extends PluginBase implements Listener {
 		unset($this->sendformtime[$n]);
 	}
 
-	static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) {
+	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) {
 		$pk = new PlaySoundPacket();
 		$pk->soundName = $sound;
 		$pk->x = $v3->x;
@@ -114,7 +114,7 @@ class Main extends PluginBase implements Listener {
 		return $pk;
 	}
 
-	static function createParticlePacket ( Vector3 $pos, string $pname ) {
+	public static function createParticlePacket ( Vector3 $pos, string $pname ) {
 		$pk = new SpawnParticleEffectPacket();
 		$pk->position = $pos;
 		$pk->particleName = $pname;
@@ -123,7 +123,7 @@ class Main extends PluginBase implements Listener {
 		return $pk;
 	}
 
-	function move_lift () {
+	public function move_lift () {
 		foreach ( $this->movinglift as $hash=>&$data ) {
 			/**
 			 * hash => [
@@ -349,7 +349,7 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	function switchblock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
+	public function switchblock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$world = $pos->getWorld();
 		if ( $updown === self::MOVE_UP ) {
@@ -403,7 +403,7 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	function sendform ( Player $p, int $formId ) {
+	public function sendform ( Player $p, int $formId ) {
 		$n = $p->getName();
 		if ( isset($this->sendformtime[$n]) and $this->sendformtime[$n] > microtime(true) ) {
 			return;
@@ -430,7 +430,7 @@ class Main extends PluginBase implements Listener {
 		});
 	}
 
-	function handleForm ( Player $p, $data, int $formId ) {
+	public function handleForm ( Player $p, $data, int $formId ) {
 		if ( $data === null ) {
 			return;
 		}
@@ -478,7 +478,7 @@ class Main extends PluginBase implements Listener {
 	/**
 	 * @handleCancelled
 	 */
-	function tap ( PlayerInteractEvent $e ) {
+	public function tap ( PlayerInteractEvent $e ) {
 		if ( $e->getAction() !== PlayerInteractEvent::RIGHT_CLICK_BLOCK ) {
 			return;
 		}
@@ -570,7 +570,7 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	function checkqueue ( Player $p, Position $b, array $checkxz ) {
+	public function checkqueue ( Player $p, Position $b, array $checkxz ) {
 		$cancel = false;
 		$world = $b->getWorld();
 		$lvh = $world->getMaxY();
@@ -626,7 +626,7 @@ class Main extends PluginBase implements Listener {
 		return $cancel;
 	}
 
-	function liftcheckplayer ( World $world, $hash ) {
+	public function liftcheckplayer ( World $world, $hash ) {
 		$lift = ($this->movinglift[$hash] ?? null);
 		if ( $lift === null ) {
 			return;
@@ -659,7 +659,7 @@ class Main extends PluginBase implements Listener {
 		$this->movinglift[$hash][1] = $inLiftEntities;
 	}
 
-	function getliftsize ( World $world, Vector3 $pos ) {
+	public function getliftsize ( World $world, Vector3 $pos ) {
 		if ( $this->islift2_9($world, $pos) ) {
 			if ( $this->islift2_25($world, true, $pos) ) {
 				return 5;
@@ -669,7 +669,7 @@ class Main extends PluginBase implements Listener {
 		return 1;
 	}
 
-	function islift2 ( World $world, $x, $y=0, $z=0 ) {
+	public function islift2 ( World $world, $x, $y=0, $z=0 ) {
 		if ( $x instanceof Vector3 ) {
 			$y = $x->y;
 			$z = $x->z;
@@ -679,7 +679,7 @@ class Main extends PluginBase implements Listener {
 		return $this->islift($world, $x, $y, $z, 42);
 	}
 
-	function islift ( World $world, $x, $y=0, $z=0, $bid=41 ) {
+	public function islift ( World $world, $x, $y=0, $z=0, $bid=41 ) {
 		if ( $x instanceof Vector3 ) {
 			$y = $x->y;
 			$z = $x->z;
@@ -696,7 +696,7 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	function islift2_25 ( World $world, $islift_9, $x, $y=0, $z=0 ) {
+	public function islift2_25 ( World $world, $islift_9, $x, $y=0, $z=0 ) {
 		if ( !$this->enable5x5 ) {
 			return false;
 		}
@@ -718,7 +718,7 @@ class Main extends PluginBase implements Listener {
 		return ( $islift_9 or $this->islift2_9($world, $x, $y, $z) );
 	}
 
-	function islift2_9 ( World $world, $x, $y=0, $z=0 ) {
+	public function islift2_9 ( World $world, $x, $y=0, $z=0 ) {
 		if ( !$this->enable3x3 ) {
 			return false;
 		}
@@ -744,11 +744,11 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	static function lifthash ( World $world, Vector3 $v3 ) {
+	public static function lifthash ( World $world, Vector3 $v3 ) {
 		return ( $world->getFolderName() . ';' . ((int) $v3->x) . ';' . ((int) $v3->z) );
 	}
 
-	function pvp ( EntityDamageEvent $e ) {
+	public function pvp ( EntityDamageEvent $e ) {
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
 			$entityId = $e->getEntity()->getId();
@@ -767,7 +767,7 @@ class Form implements PMForm {
 	protected $formData = [];
 	protected $closure = null;
 
-	function __construct ( ?Player $p, array $formData, ?\Closure $closure = null ) {
+	public function __construct ( ?Player $p, array $formData, ?\Closure $closure = null ) {
 		$this->formData = $formData;
 		$this->closure = $closure;
 		if ( $p !== null ) {
@@ -781,7 +781,7 @@ class Form implements PMForm {
 		}
 	}
 
-	function jsonSerialize () {
+	public function jsonSerialize () {
 		return $this->formData;
 	}
 
