@@ -314,11 +314,11 @@ class Main extends PluginBase implements Listener {
 					$ii = 0;
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-							$b4142 = ($addx===0&&$addz===0)?41:42;
+							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
 						}
 					}
 					foreach ( $pls as $p ) {
@@ -332,11 +332,11 @@ class Main extends PluginBase implements Listener {
 					$ii = 0;
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-							$b4142 = ($addx===0&&$addz===0)?41:42;
+							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, self::$BlockFactory->get($airid[$ii++], 0), false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
 						}
 					}
 					foreach ( $pls as $p ) {
@@ -392,13 +392,13 @@ class Main extends PluginBase implements Listener {
 		}
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-				$b4142 = ($addx===0&&$addz===0)?41:42;
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+				$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h, $pos->z+$addz, $setBlock, false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-1, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-2, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-3, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
 				$world->setBlockAt($pos->x+$addx, $pos->y+$h-4, $pos->z+$addz, self::$BlockFactory->get(0, 0), false);
-				$world->setBlockAt($pos->x+$addx, $pos->y+$h-5, $pos->z+$addz, self::$BlockFactory->get($b4142, 0), false);
+				$world->setBlockAt($pos->x+$addx, $pos->y+$h-5, $pos->z+$addz, $setBlock, false);
 			}
 		}
 		$pos->y += $h;
