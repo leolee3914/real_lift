@@ -764,8 +764,8 @@ class Main extends PluginBase implements Listener {
 }
 
 class Form implements PMForm {
-	protected $formData = [];
-	protected $closure = null;
+	protected array $formData = [];
+	protected ?\Closure $closure = null;
 
 	public function __construct ( ?Player $p, array $formData, ?\Closure $closure = null ) {
 		$this->formData = $formData;
