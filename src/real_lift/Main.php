@@ -775,7 +775,7 @@ class Form implements PMForm {
 		}
 	}
 
-	public function handleResponse(Player $player, $data) : void {
+	public function handleResponse ( Player $player, $data ) : void {
 		if ( $this->closure !== null ) {
 			($this->closure)($player, $data);
 		}
