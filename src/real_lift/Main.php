@@ -119,7 +119,7 @@ class Main extends PluginBase implements Listener {
 		foreach ( $this->movingLift as $hash=>$movingLift ) {
 			$pos = $movingLift->position;
 			$world = $pos->getWorld();
-			if ( !$world->isLoaded() or !$this->islift($world, $pos) ) {
+			if ( !$world->isLoaded() or !$this->isLiftColumn($world, $pos) ) {
 				unset($this->movingLift[$hash]);
 				continue;
 			}
@@ -246,7 +246,7 @@ class Main extends PluginBase implements Listener {
 			}
 			$fillerIds = [];
 			$stop = false;
-			if ( $movingLift->movement === self::MOVEMENT_UP and $canmove ) {
+			if ( $canmove and $movingLift->movement === self::MOVEMENT_UP ) {
 				if ( ($pos->y + 1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
@@ -259,7 +259,7 @@ class Main extends PluginBase implements Listener {
 						}
 					}
 				}
-			} elseif ( $movingLift->movement === self::MOVEMENT_DOWN and $canmove ) {
+			} elseif ( $canmove and $movingLift->movement === self::MOVEMENT_DOWN ) {
 				if ( ($pos->y - 5) <= $world->getMinY() or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
@@ -286,8 +286,7 @@ class Main extends PluginBase implements Listener {
 				continue;
 			}
 			if ( $canmove ) {
-				$liftsize = $this->getLiftSizeByPosition($world, $pos);
-				if ( $liftsize !== $movingLift->getSize() ) {
+				if ( $this->getLiftSizeByPosition($world, $pos) !== $movingLift->getSize() ) {
 					unset($this->movingLift[$hash]);
 					continue;
 				}
@@ -437,7 +436,7 @@ class Main extends PluginBase implements Listener {
 				$fastMode = false;
 			}
 			$hash = self::getLiftHash($world, $v3);
-			if ( !isset($this->movingLift[$hash]) and $this->islift($world, $v3) ) {
+			if ( !isset($this->movingLift[$hash]) and $this->isLiftColumn($world, $v3) ) {
 				$this->movingLift[$hash] = new MovingLift(
 					position: Position::fromObject($v3, $world),
 					movement: $floorList[$data][1] > $v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
@@ -477,7 +476,7 @@ class Main extends PluginBase implements Listener {
 			if ( $b_pos->y < $p->getPosition()->y ) {
 				$v3->y += 5;
 			}
-			if ( $this->islift($world, $v3) ) {
+			if ( $this->isLiftColumn($world, $v3) ) {
 				$e->cancel();
 				$hash = self::getLiftHash($world, $v3);
 				$movingLift = ($this->movingLift[$hash] ?? null);
@@ -561,7 +560,7 @@ class Main extends PluginBase implements Listener {
 				$x = $b->x + $offsetX;
 				$z = $b->z + $offsetZ;
 				for ( $y = 5; $y < $worldMaxY; ++$y ) {
-					if ( $this->islift($world, $x, $y, $z) ) {
+					if ( $this->isLiftColumn($world, new Vector3($x, $y, $z)) ) {
 						$cancel = true;
 						$targetY = $b->y+3;
 						if ( $targetY === $y ) {
@@ -632,8 +631,8 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public function getLiftSizeByPosition ( World $world, Vector3 $pos ) : int {
-		if ( $this->islift2_9($world, $pos) ) {
-			if ( $this->islift2_25($world, true, $pos) ) {
+		if ( $this->isLift_9($world, $pos) ) {
+			if ( $this->isLift_25($world, true, $pos) ) {
 				return 5;
 			}
 			return 3;
@@ -641,73 +640,73 @@ class Main extends PluginBase implements Listener {
 		return 1;
 	}
 
-	public function islift2 ( World $world, $x, $y=0, $z=0 ) : bool {
-		if ( $x instanceof Vector3 ) {
-			$y = $x->y;
-			$z = $x->z;
-
-			$x = $x->x;
-		}
-		return $this->islift($world, $x, $y, $z, BlockLegacyIds::IRON_BLOCK);
+	public function isLiftColumnIronBlock ( World $world, Vector3 $pos ) : bool {
+		return $this->isLiftColumn($world, $pos, BlockLegacyIds::IRON_BLOCK);
 	}
 
-	public function islift ( World $world, $x, $y=0, $z=0, $bid=BlockLegacyIds::GOLD_BLOCK ) : bool {
-		if ( $x instanceof Vector3 ) {
-			$y = $x->y;
-			$z = $x->z;
+	public function isLiftColumn ( World $world, Vector3 $pos, $blockId = BlockLegacyIds::GOLD_BLOCK ) : bool {
+		$y = $pos->y;
 
-			$x = $x->x;
+		if ( $y > ($world->getMaxY() - 1) ) {
+			return false;
 		}
-		$idlist = [$bid, 0, 0, 0, 0, $bid];
-		foreach ( $idlist as $i=>$id ) {
-			$yy = $y-$i;
-			if ( $yy < 0 or $world->getBlockAt($x, $yy, $z, false, false)->getId() !== $id ) {
+		$x = $pos->x;
+		$z = $pos->z;
+
+		$worldMinY = $world->getMinY();
+
+		foreach ( [
+			$blockId,
+			BlockLegacyIds::AIR,
+			BlockLegacyIds::AIR,
+			BlockLegacyIds::AIR,
+			BlockLegacyIds::AIR,
+			$blockId,
+		] as $i=>$id ) {
+			$yToCheck = $y - $i;
+			if ( $yToCheck < $worldMinY or $world->getBlockAt($x, $yToCheck, $z, false, false)->getId() !== $id ) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	public function islift2_25 ( World $world, $islift_9, $x, $y=0, $z=0 ) : bool {
+	public function isLift_25 ( World $world, $islift_9, Vector3 $pos ) : bool {
 		if ( !$this->enable5x5 ) {
 			return false;
 		}
-		if ( $x instanceof Vector3 ) {
-			$y = $x->y;
-			$z = $x->z;
+		$x = $pos->x;
+		$y = $pos->y;
+		$z = $pos->z;
 
-			$x = $x->x;
-		}
 		for ( $addx=-2;$addx<=2;++$addx ) {
 			for ( $addz=-2;$addz<=2;++$addz ) {
 				if ( abs($addx) === 2 or abs($addz) === 2 ) {
-					if ( !$this->islift2($world, $x+$addx, $y, $z+$addz) ) {
+					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x+$addx, $y, $z+$addz)) ) {
 						return false;
 					}
 				}
 			}
 		}
-		return ( $islift_9 or $this->islift2_9($world, $x, $y, $z) );
+		return ( $islift_9 or $this->isLift_9($world, $pos) );
 	}
 
-	public function islift2_9 ( World $world, $x, $y=0, $z=0 ) : bool {
+	public function isLift_9 ( World $world, Vector3 $pos ) : bool {
 		if ( !$this->enable3x3 ) {
 			return false;
 		}
-		if ( $x instanceof Vector3 ) {
-			$y = $x->y;
-			$z = $x->z;
+		$x = $pos->x;
+		$y = $pos->y;
+		$z = $pos->z;
 
-			$x = $x->x;
-		}
 		for ( $addx=-1;$addx<=1;++$addx ) {
 			for ( $addz=-1;$addz<=1;++$addz ) {
 				if ( $addx !== 0 or $addz !== 0 ) {
-					if ( !$this->islift2($world, $x+$addx, $y, $z+$addz) ) {
+					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x+$addx, $y, $z+$addz)) ) {
 						return false;
 					}
 				} else {
-					if ( !$this->islift($world, $x, $y, $z) ) {
+					if ( !$this->isLiftColumn($world, new Vector3($x, $y, $z)) ) {
 						return false;
 					}
 				}
