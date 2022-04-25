@@ -51,8 +51,6 @@ class Main extends PluginBase implements Listener {
 	/** @var array<string, MovingLift> */
 	public array $movingLift = [];
 
-	public array $floorlistliftpos = [];
-
 	public array $sendformtime = [];
 
 	public function onEnable () : void {
@@ -90,7 +88,6 @@ class Main extends PluginBase implements Listener {
 		$p = $e->getPlayer();
 		$n = $p->getName();
 
-		unset($this->floorlistliftpos[$n]);
 		unset($this->sendformtime[$n]);
 	}
 
@@ -394,7 +391,7 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public function sendForm ( Player $p, array $floorList ) : void {
+	public function sendForm ( Player $p, array $floorList, array $liftInfo ) : void {
 		if ( !$this->multiple_floors_mode ) {
 			return;
 		}
@@ -407,7 +404,7 @@ class Main extends PluginBase implements Listener {
 
 		$data = [
 			'type'=>'form',
-			'title'=>TF::DARK_BLUE . '升降機' . ($this->floorlistliftpos[$n][3]===true ? ' (快速模式)' : ''),
+			'title'=>TF::DARK_BLUE . '升降機' . ($liftInfo[3] ? ' (快速模式)' : ''),
 			'content'=>TF::YELLOW . "請選擇樓層:\n",
 			'buttons'=>[],
 		];
@@ -415,7 +412,7 @@ class Main extends PluginBase implements Listener {
 			$data['buttons'][] = ['text'=>$floor[0]];
 		}
 
-		new Form($p, $data, function (Player $p, $data) use ($floorList) {
+		new Form($p, $data, function (Player $p, $data) use ($floorList, $liftInfo) {
 			if ( !$this->multiple_floors_mode ) {
 				return;
 			}
@@ -428,10 +425,9 @@ class Main extends PluginBase implements Listener {
 			if ( !isset($floorList[$data]) ) {
 				return;
 			}
-			$pos = $this->floorlistliftpos[$n];
-			$world = $pos[0];
-			$v3 = $pos[1];
-			$fastMode = $pos[3];
+			$world = $liftInfo[0];
+			$v3 = $liftInfo[1];
+			$fastMode = $liftInfo[3];
 			if ( $data === 0 or $data === (count($floorList)-1) ) {
 				$fastMode = false;
 			}
@@ -451,7 +447,6 @@ class Main extends PluginBase implements Listener {
 			} else {
 				$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
 			}
-			unset($this->floorlistliftpos[$n]);
 		});
 	}
 
@@ -510,8 +505,7 @@ class Main extends PluginBase implements Listener {
 						if ( count($floorList) !== 0 ) {
 							array_unshift($floorList, [TF::DARK_RED . '最高層 (高度:' . ($worldMaxY - 5) . ')', $worldMaxY-1]);
 							$floorList[] = [TF::DARK_RED . '最低層 (高度:' . ($worldMinY + 1) . ')', $liftMinY];
-							$this->floorlistliftpos[$n] = [$world, $v3, $p, $fast_mode];
-							$this->sendForm($p, $floorList);
+							$this->sendForm($p, $floorList, [$world, $v3, $p, $fast_mode]);
 							return;
 						}
 					}
