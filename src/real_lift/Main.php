@@ -27,9 +27,9 @@ use function count;
 
 class Main extends PluginBase implements Listener {
 
-	const MOVE_UP = 0;
-	const MOVE_DOWN = 1;
-	const MOVE_STOP = 2;
+	const MOVEMENT_UP = 0;
+	const MOVEMENT_DOWN = 1;
+	const MOVEMENT_STOP = 2;
 
 	const QUEUE_CHECK_XZ_REDSTONE_LAMP = [
 		[1,0],[0,1],[-1,0],[0,-1],
@@ -177,13 +177,13 @@ class Main extends PluginBase implements Listener {
 							unset($this->queue[$hash][$lift_y]);
 						} else {
 							if ( $pos->y > $dt[1] ) {
-								$data[2] = self::MOVE_DOWN;
+								$data[2] = self::MOVEMENT_DOWN;
 								$data[3] = false;
 								$data[6] = $dt[1];
 								$data[7] = false;
 								$data[8] = true;
 							} elseif ( $pos->y < $dt[1] ) {
-								$data[2] = self::MOVE_UP;
+								$data[2] = self::MOVEMENT_UP;
 								$data[3] = false;
 								$data[6] = $dt[1];
 								$data[7] = false;
@@ -215,7 +215,7 @@ class Main extends PluginBase implements Listener {
 				$entity->resetFallDistance();
 			}
 			$canmove = true;
-			if ( $data[2] === self::MOVE_UP ) {
+			if ( $data[2] === self::MOVEMENT_UP ) {
 				foreach ( $pls as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, 0.8, 0));
@@ -224,7 +224,7 @@ class Main extends PluginBase implements Listener {
 						}
 					}
 				}
-			} elseif ( $data[2] === self::MOVE_DOWN ) {
+			} elseif ( $data[2] === self::MOVEMENT_DOWN ) {
 				foreach ( $pls as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, -0.4, 0));
@@ -257,7 +257,7 @@ class Main extends PluginBase implements Listener {
 			}
 			$airid = [];
 			$stop = false;
-			if ( $data[2] === self::MOVE_UP and $canmove ) {
+			if ( $data[2] === self::MOVEMENT_UP and $canmove ) {
 				if ( ($pos->y+1) >= $world->getMaxY() or $pos->y === $data[6] ) {
 					$stop = true;
 				}
@@ -270,7 +270,7 @@ class Main extends PluginBase implements Listener {
 						}
 					}
 				}
-			} elseif ( $data[2] === self::MOVE_DOWN and $canmove ) {
+			} elseif ( $data[2] === self::MOVEMENT_DOWN and $canmove ) {
 				if ( $pos->y <= 5 or $pos->y === $data[6] ) {
 					$stop = true;
 				}
@@ -291,7 +291,7 @@ class Main extends PluginBase implements Listener {
 					$data[7] = true;
 					continue;
 				}
-				$data[2] = self::MOVE_STOP;
+				$data[2] = self::MOVEMENT_STOP;
 				$data[3] = 40;
 				$data[5] = true;
 				continue;
@@ -303,7 +303,7 @@ class Main extends PluginBase implements Listener {
 					unset($this->movinglift[$hash]);
 					continue;
 				}
-				if ( $data[2] === self::MOVE_UP ) {
+				if ( $data[2] === self::MOVEMENT_UP ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
@@ -323,7 +323,7 @@ class Main extends PluginBase implements Listener {
 					}
 					++$pos->y;
 					$data[4] = true;
-				} elseif ( $data[2] === self::MOVE_DOWN ) {
+				} elseif ( $data[2] === self::MOVEMENT_DOWN ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
@@ -351,12 +351,12 @@ class Main extends PluginBase implements Listener {
 	public function switchblock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$world = $pos->getWorld();
-		if ( $updown === self::MOVE_UP ) {
+		if ( $updown === self::MOVEMENT_UP ) {
 			if ( $h < 6 or ($pos->y+6) >= $world->getMaxY() ) {
 				return false;
 			}
 			$h = 6;
-		} elseif ( $updown === self::MOVE_DOWN ) {
+		} elseif ( $updown === self::MOVEMENT_DOWN ) {
 			if ( $h > -6 or ($pos->y-5) <= 5 ) {
 				return false;
 			}
@@ -459,7 +459,7 @@ class Main extends PluginBase implements Listener {
 					$this->movinglift[$hash] = [
 						0=>Position::fromObject($v3, $world),
 						1=>[],
-						2=>($this->floorlist[$n][$data][1]>$v3->y ? self::MOVE_UP : self::MOVE_DOWN),
+						2=>($this->floorlist[$n][$data][1]>$v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
 						3=>false,
 						4=>false,
 						5=>false,
@@ -538,7 +538,7 @@ class Main extends PluginBase implements Listener {
 					$this->movinglift[$hash] = [
 						0=>Position::fromObject($v3, $world),
 						1=>[],
-						2=>($b_pos->y>$p->getPosition()->y ? self::MOVE_UP : self::MOVE_DOWN),
+						2=>($b_pos->y>$p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
 						3=>false,
 						4=>false,
 						5=>false,
@@ -551,7 +551,7 @@ class Main extends PluginBase implements Listener {
 				} elseif ( $this->movinglift[$hash][3] !== false ) {
 					$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
 				} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
-					$this->movinglift[$hash][2] = self::MOVE_STOP;
+					$this->movinglift[$hash][2] = self::MOVEMENT_STOP;
 					$this->movinglift[$hash][3] = 40;
 					$p->sendMessage(TF::GREEN . '> 已停止升降機');
 				}
@@ -595,7 +595,7 @@ class Main extends PluginBase implements Listener {
 							$this->movinglift[$hash] = [
 								0=>Position::fromObject($v3, $world),
 								1=>[],
-								2=>self::MOVE_STOP,
+								2=>self::MOVEMENT_STOP,
 								3=>false,
 								4=>false,
 								5=>false,
