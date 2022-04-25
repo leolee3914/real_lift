@@ -614,17 +614,16 @@ class Main extends PluginBase implements Listener {
 				$addmin = $addmax = 0;
 				break;
 		}
-		$minx = $v3->x+$addmin;
-		$maxx = $v3->x+$addmax+1;
-		$miny = $v3->y-6.5;
-		$maxy = $v3->y;
-		$minz = $v3->z+$addmin;
-		$maxz = $v3->z+$addmax+1;
-		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($v3)) as $pl ) {
-			$ispl = ($pl instanceof Player);
-			$pos = $pl->getPosition();
-			if ( (!$ispl or !$pl->getGamemode()->equals(GameMode::SPECTATOR())) and $pos->x > $minx and $pos->x < $maxx and $pos->z > $minz and $pos->z < $maxz and $pos->y > $miny and $pos->y < $maxy ) {
-				$insideEntities[$pl->getId()] = $pl;
+		$minX = $v3->x + $addmin;
+		$maxX = $v3->x + $addmax + 1;
+		$minY = $v3->y - 6.5;
+		$maxY = $v3->y;
+		$minZ = $v3->z + $addmin;
+		$maxZ = $v3->z + $addmax + 1;
+		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($v3)) as $entity ) {
+			$pos = $entity->getPosition();
+			if ( (!$entity instanceof Player or !$entity->getGamemode()->equals(GameMode::SPECTATOR())) and $pos->x > $minX and $pos->x < $maxX and $pos->z > $minZ and $pos->z < $maxZ and $pos->y > $minY and $pos->y < $maxY ) {
+				$insideEntities[$entity->getId()] = $entity;
 			}
 		}
 		$movingLift->insideEntities = $insideEntities;
