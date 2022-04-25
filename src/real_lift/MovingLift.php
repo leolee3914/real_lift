@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace real_lift;
 
+use pocketmine\entity\Entity;
+use pocketmine\player\Player;
 use pocketmine\world\Position;
 use function get_class;
 
 class MovingLift {
 
+	/** @var array<int, Entity|Player> */
 	public array $insideEntities = [];
 
 	public int $targetY;
@@ -32,17 +35,17 @@ class MovingLift {
 		if ( $targetY !== null ) {
 			$this->targetY = $targetY;
 		}
-		$this->verifyLiftSize();
+		$this->verifySize();
 	}
 
-	public function verifyLiftSize (): void {
+	public function verifySize (): void {
 		match ( $this->liftSize ) {
 			1, 3, 5 => true,
 			default => throw new \InvalidArgumentException("Invalid lift size: {$this->liftSize}"),
 		};
 	}
 
-	public function getLiftSize () : int {
+	public function getSize () : int {
 		return $this->liftSize;
 	}
 

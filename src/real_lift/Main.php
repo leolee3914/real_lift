@@ -94,7 +94,7 @@ class Main extends PluginBase implements Listener {
 		unset($this->sendformtime[$n]);
 	}
 
-	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) {
+	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) : PlaySoundPacket {
 		$pk = new PlaySoundPacket();
 		$pk->soundName = $sound;
 		$pk->x = $v3->x;
@@ -106,7 +106,7 @@ class Main extends PluginBase implements Listener {
 		return $pk;
 	}
 
-	public static function createParticlePacket ( Vector3 $pos, string $pname ) {
+	public static function createParticlePacket ( Vector3 $pos, string $pname ) : SpawnParticleEffectPacket {
 		$pk = new SpawnParticleEffectPacket();
 		$pk->position = $pos;
 		$pk->particleName = $pname;
@@ -193,7 +193,7 @@ class Main extends PluginBase implements Listener {
 				}
 				continue;
 			}
-			$this->liftcheckplayer($world, $hash);
+			$this->checkLiftEntity($world, $hash);
 			$insideEntities = $movingLift->insideEntities;
 			foreach ( $insideEntities as $entity ) {
 				$entity->resetFallDistance();
@@ -218,7 +218,7 @@ class Main extends PluginBase implements Listener {
 					}
 				}
 			}
-			switch ( $movingLift->getLiftSize() ) {
+			switch ( $movingLift->getSize() ) {
 				case 5;
 					$addmin = -2;
 					$addmax = 2;
@@ -236,7 +236,7 @@ class Main extends PluginBase implements Listener {
 				$movingLift->fastMode = true;
 			}
 			if ( $movingLift->fastMode ) {
-				$swapBlock = $this->swapBlock($movingLift, $movingLift->movement, $movingLift->targetY - $pos->y, $insideEntities, $addmin, $addmax);
+				$swapBlock = $this->swapBlock($movingLift, $movingLift->targetY - $pos->y, $addmin, $addmax);
 				if ( $swapBlock ) {
 					$movingLift->moving = true;
 					continue;
@@ -286,8 +286,8 @@ class Main extends PluginBase implements Listener {
 				continue;
 			}
 			if ( $canmove ) {
-				$liftsize = $this->getliftsize($world, $pos);
-				if ( $liftsize !== $movingLift->getLiftSize() ) {
+				$liftsize = $this->getLiftSizeByPosition($world, $pos);
+				if ( $liftsize !== $movingLift->getSize() ) {
 					unset($this->movingLift[$hash]);
 					continue;
 				}
@@ -336,15 +336,15 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	public function swapBlock ( MovingLift $movingLift, int $movement, int $h, $pls, $addmin=0, $addmax=0 ) {
+	public function swapBlock ( MovingLift $movingLift, int $h, int $addmin, int $addmax ) : bool {
 		$pos = $movingLift->position;
 		$world = $pos->getWorld();
-		if ( $movement === self::MOVEMENT_UP ) {
+		if ( $movingLift->movement === self::MOVEMENT_UP ) {
 			if ( $h < 6 or ($pos->y + 6) > ($world->getMaxY() - 1) ) {
 				return false;
 			}
 			$h = 6;
-		} elseif ( $movement === self::MOVEMENT_DOWN ) {
+		} elseif ( $movingLift->movement === self::MOVEMENT_DOWN ) {
 			if ( $h > -6 or ($pos->y - 5 - 6) < $world->getMinY() ) {
 				return false;
 			}
@@ -365,7 +365,7 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		}
-		foreach ( $pls as $p ) {
+		foreach ( $movingLift->insideEntities as $p ) {
 			$p->teleport($p->getPosition()->add(0, $h, 0));
 		}
 		$airBlock = VanillaBlocks::AIR();
@@ -391,6 +391,7 @@ class Main extends PluginBase implements Listener {
 			}
 		}
 		$pos->y += $h;
+
 		return true;
 	}
 
@@ -445,7 +446,7 @@ class Main extends PluginBase implements Listener {
 					playSound: false,
 					targetY: $floorList[$data][1],
 					unset: false,
-					liftSize: $this->getliftsize($world, $v3),
+					liftSize: $this->getLiftSizeByPosition($world, $v3),
 					fastMode: $fastMode,
 				);
 			} else {
@@ -523,7 +524,7 @@ class Main extends PluginBase implements Listener {
 						playSound: false,
 						targetY: null,
 						unset: false,
-						liftSize: $this->getliftsize($world, $v3),
+						liftSize: $this->getLiftSizeByPosition($world, $v3),
 						fastMode: false,
 					);
 				} elseif ( $movingLift->waiting !== null ) {
@@ -551,7 +552,7 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	public function checkqueue ( Player $p, Position $b, array $checkxz ) {
+	public function checkqueue ( Player $p, Position $b, array $checkxz ) : bool {
 		$cancel = false;
 		$world = $b->getWorld();
 		$worldMaxY = $world->getMaxY();
@@ -578,7 +579,7 @@ class Main extends PluginBase implements Listener {
 							playSound: false,
 							targetY: null,
 							unset: true,
-							liftSize: $this->getliftsize($world, $v3),
+							liftSize: $this->getLiftSizeByPosition($world, $v3),
 							fastMode: true,
 						));
 						$movingLift->fastMode = true;
@@ -593,7 +594,7 @@ class Main extends PluginBase implements Listener {
 		return $cancel;
 	}
 
-	public function liftcheckplayer ( World $world, $hash ) {
+	public function checkLiftEntity ( World $world, $hash ) : void {
 		$movingLift = ($this->movingLift[$hash] ?? null);
 		if ( $movingLift === null ) {
 			return;
@@ -601,7 +602,7 @@ class Main extends PluginBase implements Listener {
 
 		$insideEntities = [];
 		$v3 = $movingLift->position;
-		switch ( $movingLift->getLiftSize() ) {
+		switch ( $movingLift->getSize() ) {
 			case 5;
 				$addmin = -2;
 				$addmax = 2;
@@ -630,7 +631,7 @@ class Main extends PluginBase implements Listener {
 		$movingLift->insideEntities = $insideEntities;
 	}
 
-	public function getliftsize ( World $world, Vector3 $pos ) {
+	public function getLiftSizeByPosition ( World $world, Vector3 $pos ) : int {
 		if ( $this->islift2_9($world, $pos) ) {
 			if ( $this->islift2_25($world, true, $pos) ) {
 				return 5;
@@ -640,7 +641,7 @@ class Main extends PluginBase implements Listener {
 		return 1;
 	}
 
-	public function islift2 ( World $world, $x, $y=0, $z=0 ) {
+	public function islift2 ( World $world, $x, $y=0, $z=0 ) : bool {
 		if ( $x instanceof Vector3 ) {
 			$y = $x->y;
 			$z = $x->z;
@@ -650,7 +651,7 @@ class Main extends PluginBase implements Listener {
 		return $this->islift($world, $x, $y, $z, BlockLegacyIds::IRON_BLOCK);
 	}
 
-	public function islift ( World $world, $x, $y=0, $z=0, $bid=BlockLegacyIds::GOLD_BLOCK ) {
+	public function islift ( World $world, $x, $y=0, $z=0, $bid=BlockLegacyIds::GOLD_BLOCK ) : bool {
 		if ( $x instanceof Vector3 ) {
 			$y = $x->y;
 			$z = $x->z;
@@ -667,7 +668,7 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public function islift2_25 ( World $world, $islift_9, $x, $y=0, $z=0 ) {
+	public function islift2_25 ( World $world, $islift_9, $x, $y=0, $z=0 ) : bool {
 		if ( !$this->enable5x5 ) {
 			return false;
 		}
@@ -689,7 +690,7 @@ class Main extends PluginBase implements Listener {
 		return ( $islift_9 or $this->islift2_9($world, $x, $y, $z) );
 	}
 
-	public function islift2_9 ( World $world, $x, $y=0, $z=0 ) {
+	public function islift2_9 ( World $world, $x, $y=0, $z=0 ) : bool {
 		if ( !$this->enable3x3 ) {
 			return false;
 		}
