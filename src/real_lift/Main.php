@@ -48,9 +48,8 @@ class Main extends PluginBase implements Listener {
 
 	public bool $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
 
-	public array $movinglift = [];
-
-	public array $queue = [];
+	/** @var array<string, MovingLift> */
+	public array $movingLift = [];
 
 	public array $floorlistliftpos = [];
 
@@ -117,104 +116,91 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public function move_lift () {
-		foreach ( $this->movinglift as $hash=>&$data ) {
-			/**
-			 * hash => [
-			 *  0=>(Position),
-			 *  1=>(Player|Entity[])  entityID => Player|Entity,
-			 *  2=>(int const)up|down|stop,
-			 *  3=>(bool)waiting,
-			 *  4=>(bool)is moved,
-			 *  5=>(bool)playsound,
-			 *  6=>(int)target-y,
-			 *  7=>(bool)unset,
-			 *  8=>(bool)hasQueue,
-			 *  9=>int lift_size: 1/3/5,
-			 *  10=>(bool)fast_mode
-			 * ]
-			 */
-			$pos = $data[0];
+		foreach ( $this->movingLift as $hash=>$movingLift ) {
+			$pos = $movingLift->position;
 			$world = $pos->getWorld();
 			if ( !$world->isLoaded() or !$this->islift($world, $pos) ) {
-				unset($this->queue[$hash]);
-				unset($this->movinglift[$hash]);
+				unset($this->movingLift[$hash]);
 				continue;
 			}
 
-			$issetqueue = (isset($this->queue[$hash]) and count($this->queue[$hash]) !== 0);
+			$issetqueue = (count($movingLift->queue) > 0);
 			if ( $issetqueue ) {
-				foreach ( $this->queue[$hash] as &$dt2 ) {
-					if ( --$dt2[2] <= 0 ) {
-						$block = $world->getBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, false, false);
+				foreach ( $movingLift->queue as $queueEntry ) {
+					if ( --$queueEntry->buttonBlinkTimer <= 0 ) {
+						$queueEntryPos = $queueEntry->position;
+
+						$block = $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false);
 						if ( $block instanceof BaseSign ) {
-							$world->broadcastPacketToViewers($dt2[0], self::createParticlePacket($dt2[0]->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
+							$world->broadcastPacketToViewers($queueEntryPos, self::createParticlePacket($queueEntryPos->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
 						} else {
 							switch ( $block->getId() ) {
 								case BlockLegacyIds::REDSTONE_LAMP;
-									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, VanillaBlocks::REDSTONE_LAMP()->setPowered(true), false);
+									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP()->setPowered(true), false);
 									break;
 								case BlockLegacyIds::LIT_REDSTONE_LAMP;
-									$world->setBlockAt($dt2[0]->x,$dt2[0]->y,$dt2[0]->z, VanillaBlocks::REDSTONE_LAMP(), false);
+									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP(), false);
 									break;
 							}
 						}
-						$dt2[2] = 6;
+						$queueEntry->buttonBlinkTimer = 6;
 					}
 				}
 			}
 
-			if ( $data[7] ) {
+			if ( $movingLift->unset ) {
 				if ( $issetqueue ) {
 					$first = true;
-					foreach ( $this->queue[$hash] as $lift_y=>$dt ) {
-						if ( $first === true and $data[8] === true ) {
+					foreach ( $movingLift->queue as $queueY=>$queueEntry ) {
+						if ( $first and $movingLift->hasQueue ) {
+							$queueEntryPos = $queueEntry->position;
+
 							$first = false;
-							if ( $world->getBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, false, false)->getId() === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
-								$world->setBlockAt($dt[0]->x,$dt[0]->y,$dt[0]->z, VanillaBlocks::REDSTONE_LAMP(), false);
+							if ( $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false)->getId() === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
+								$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP(), false);
 							}
-							unset($this->queue[$hash][$lift_y]);
+							unset($movingLift->queue[$queueY]);
 						} else {
-							if ( $pos->y > $dt[1] ) {
-								$data[2] = self::MOVEMENT_DOWN;
-								$data[3] = false;
-								$data[6] = $dt[1];
-								$data[7] = false;
-								$data[8] = true;
-							} elseif ( $pos->y < $dt[1] ) {
-								$data[2] = self::MOVEMENT_UP;
-								$data[3] = false;
-								$data[6] = $dt[1];
-								$data[7] = false;
-								$data[8] = true;
+							if ( $pos->y > $queueEntry->getTargetY() ) {
+								$movingLift->movement = self::MOVEMENT_DOWN;
+								$movingLift->waiting = null;
+								$movingLift->targetY = $queueEntry->getTargetY();
+								$movingLift->unset = false;
+								$movingLift->hasQueue = true;
+							} elseif ( $pos->y < $queueEntry->getTargetY() ) {
+								$movingLift->movement = self::MOVEMENT_UP;
+								$movingLift->waiting = null;
+								$movingLift->targetY = $queueEntry->getTargetY();
+								$movingLift->unset = false;
+								$movingLift->hasQueue = true;
 							}
-							$data[10] = true;
+							$movingLift->fastMode = true;
 							break;
 						}
 					}
 				}
-				if ( $data[7] ) {
-					unset($this->queue[$hash]);
-					unset($this->movinglift[$hash]);
+				if ( $movingLift->unset ) {
+					unset($this->movingLift[$hash]);
 				}
 				continue;
 			}
-			if ( $data[3] !== false ) {
-				if ( --$data[3] <= 0 ) {
-					$data[7] = true;
+			if ( $movingLift->waiting !== null ) {
+				if ( --$movingLift->waiting <= 0 ) {
+					$movingLift->unset = true;
 				}
-				if ( $data[3] === 20 and $data[5] ) {
+				if ( $movingLift->waiting === 20 and $movingLift->playSound ) {
 					$world->broadcastPacketToViewers($pos, self::createPlaySoundPacket($pos, 'random.orb', 1, 2));
 				}
 				continue;
 			}
 			$this->liftcheckplayer($world, $hash);
-			$pls = $data[1];
-			foreach ( $pls as $entity ) {
+			$insideEntities = $movingLift->insideEntities;
+			foreach ( $insideEntities as $entity ) {
 				$entity->resetFallDistance();
 			}
 			$canmove = true;
-			if ( $data[2] === self::MOVEMENT_UP ) {
-				foreach ( $pls as $p ) {
+			if ( $movingLift->movement === self::MOVEMENT_UP ) {
+				foreach ( $insideEntities as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, 0.8, 0));
 						if ( $p->getPosition()->y < ($pos->y-2.4) ) {
@@ -222,8 +208,8 @@ class Main extends PluginBase implements Listener {
 						}
 					}
 				}
-			} elseif ( $data[2] === self::MOVEMENT_DOWN ) {
-				foreach ( $pls as $p ) {
+			} elseif ( $movingLift->movement === self::MOVEMENT_DOWN ) {
+				foreach ( $insideEntities as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, -0.4, 0));
 						if ( $p->getPosition()->y > ($pos->y-3) ) {
@@ -232,50 +218,55 @@ class Main extends PluginBase implements Listener {
 					}
 				}
 			}
-			if ( $data[9] === 5 ) {
-				$addmin = -2;
-				$addmax = 2;
-			} elseif ( $data[9] === 3 ) {
-				$addmin = -1;
-				$addmax = 1;
-			} else {
-				$addmin = $addmax = 0;
+			switch ( $movingLift->getLiftSize() ) {
+				case 5;
+					$addmin = -2;
+					$addmax = 2;
+					break;
+				case 3;
+					$addmin = -1;
+					$addmax = 1;
+					break;
+				default;
+					$addmin = $addmax = 0;
+					break;
 			}
-			if ( $issetqueue and $data[10] === false ) {
-				$data[10] = true;
+
+			if ( $issetqueue and !$movingLift->fastMode ) {
+				$movingLift->fastMode = true;
 			}
-			if ( $data[10] === true ) {
-				$swapBlock = $this->swapBlock($data, $data[2], $data[6]-$pos->y, $pls, $addmin, $addmax);
+			if ( $movingLift->fastMode ) {
+				$swapBlock = $this->swapBlock($movingLift, $movingLift->movement, $movingLift->targetY - $pos->y, $insideEntities, $addmin, $addmax);
 				if ( $swapBlock ) {
-					$data[4] = true;
+					$movingLift->moving = true;
 					continue;
 				} else {
-					$data[10] = 0;
+					$movingLift->fastMode = false;
 				}
 			}
 			$airid = [];
 			$stop = false;
-			if ( $data[2] === self::MOVEMENT_UP and $canmove ) {
-				if ( ($pos->y+1) >= $world->getMaxY() or $pos->y === $data[6] ) {
+			if ( $movingLift->movement === self::MOVEMENT_UP and $canmove ) {
+				if ( ($pos->y+1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getId();
-						if ( $stop === true or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
+						if ( $stop or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
 					}
 				}
-			} elseif ( $data[2] === self::MOVEMENT_DOWN and $canmove ) {
-				if ( $pos->y <= 5 or $pos->y === $data[6] ) {
+			} elseif ( $movingLift->movement === self::MOVEMENT_DOWN and $canmove ) {
+				if ( $pos->y <= 5 or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getId();
-						if ( $stop === true or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
+						if ( $stop or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -285,23 +276,22 @@ class Main extends PluginBase implements Listener {
 				$canmove = false;
 			}
 			if ( $stop ) {
-				if ( $data[4] === false ) {
-					$data[7] = true;
+				if ( !$movingLift->moving ) {
+					$movingLift->unset = true;
 					continue;
 				}
-				$data[2] = self::MOVEMENT_STOP;
-				$data[3] = 40;
-				$data[5] = true;
+				$movingLift->movement = self::MOVEMENT_STOP;
+				$movingLift->waiting = 40;
+				$movingLift->playSound = true;
 				continue;
 			}
 			if ( $canmove ) {
 				$liftsize = $this->getliftsize($world, $pos);
-				if ( $liftsize !== $data[9] ) {
-					unset($this->queue[$hash]);
-					unset($this->movinglift[$hash]);
+				if ( $liftsize !== $movingLift->getLiftSize() ) {
+					unset($this->movingLift[$hash]);
 					continue;
 				}
-				if ( $data[2] === self::MOVEMENT_UP ) {
+				if ( $movingLift->movement === self::MOVEMENT_UP ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
@@ -314,14 +304,14 @@ class Main extends PluginBase implements Listener {
 							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
 						}
 					}
-					foreach ( $pls as $p ) {
+					foreach ( $insideEntities as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->getPosition()->add(0, 1, 0));
 						}
 					}
 					++$pos->y;
-					$data[4] = true;
-				} elseif ( $data[2] === self::MOVEMENT_DOWN ) {
+					$movingLift->moving = true;
+				} elseif ( $movingLift->movement === self::MOVEMENT_DOWN ) {
 					$ii = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
@@ -334,20 +324,20 @@ class Main extends PluginBase implements Listener {
 							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
 						}
 					}
-					foreach ( $pls as $p ) {
+					foreach ( $insideEntities as $p ) {
 						if ( !$p instanceof Player ) {
 							$p->teleport($p->getPosition()->add(0, -1, 0));
 						}
 					}
 					--$pos->y;
-					$data[4] = true;
+					$movingLift->moving = true;
 				}
 			}
 		}
 	}
 
-	public function swapBlock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
-		$pos = $data[0];
+	public function swapBlock ( MovingLift $movingLift, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
+		$pos = $movingLift->position;
 		$world = $pos->getWorld();
 		if ( $updown === self::MOVEMENT_UP ) {
 			if ( $h < 6 or ($pos->y+6) >= $world->getMaxY() ) {
@@ -441,25 +431,23 @@ class Main extends PluginBase implements Listener {
 			$pos = $this->floorlistliftpos[$n];
 			$world = $pos[0];
 			$v3 = $pos[1];
-			$fast_mode = $pos[3];
+			$fastMode = $pos[3];
 			if ( $data === 0 or $data === (count($floorList)-1) ) {
-				$fast_mode = 0;
+				$fastMode = false;
 			}
 			$hash = self::getLiftHash($world, $v3);
-			if ( !isset($this->movinglift[$hash]) and $this->islift($world, $v3) ) {
-				$this->movinglift[$hash] = [
-					0=>Position::fromObject($v3, $world),
-					1=>[],
-					2=>($floorList[$data][1]>$v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
-					3=>false,
-					4=>false,
-					5=>false,
-					6=>$floorList[$data][1],
-					7=>false,
-					8=>false,
-					9=>$this->getliftsize($world, $v3),
-					10=>$fast_mode,
-				];
+			if ( !isset($this->movingLift[$hash]) and $this->islift($world, $v3) ) {
+				$this->movingLift[$hash] = new MovingLift(
+					position: Position::fromObject($v3, $world),
+					movement: $floorList[$data][1] > $v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
+					waiting: null,
+					moving: false,
+					playSound: false,
+					targetY: $floorList[$data][1],
+					unset: false,
+					liftSize: $this->getliftsize($world, $v3),
+					fastMode: $fastMode,
+				);
 			} else {
 				$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
 			}
@@ -491,7 +479,8 @@ class Main extends PluginBase implements Listener {
 			if ( $this->islift($world, $v3) ) {
 				$e->cancel();
 				$hash = self::getLiftHash($world, $v3);
-				if ( !isset($this->movinglift[$hash]) ) {
+				$movingLift = ($this->movingLift[$hash] ?? null);
+				if ( $movingLift === null ) {
 					if ( $this->multiple_floors_mode ) {
 						$lvh = $world->getMaxY();
 						$floorList = [];
@@ -523,24 +512,22 @@ class Main extends PluginBase implements Listener {
 							return;
 						}
 					}
-					$this->movinglift[$hash] = [
-						0=>Position::fromObject($v3, $world),
-						1=>[],
-						2=>($b_pos->y>$p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
-						3=>false,
-						4=>false,
-						5=>false,
-						6=>false,
-						7=>false,
-						8=>false,
-						9=>$this->getliftsize($world, $v3),
-						10=>0,
-					];
-				} elseif ( $this->movinglift[$hash][3] !== false ) {
+					$this->movingLift[$hash] = new MovingLift(
+						position: Position::fromObject($v3, $world),
+						movement: $b_pos->y > $p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
+						waiting: null,
+						moving: false,
+						playSound: false,
+						targetY: null,
+						unset: false,
+						liftSize: $this->getliftsize($world, $v3),
+						fastMode: false,
+					);
+				} elseif ( $movingLift->waiting !== null ) {
 					$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
-				} elseif ( isset($this->movinglift[$hash][1][$p->getId()]) ) {
-					$this->movinglift[$hash][2] = self::MOVEMENT_STOP;
-					$this->movinglift[$hash][3] = 40;
+				} elseif ( isset($movingLift->insideEntities[$p->getId()]) ) {
+					$movingLift->movement = self::MOVEMENT_STOP;
+					$movingLift->waiting = 40;
 					$p->sendMessage(TF::GREEN . '> 已停止升降機');
 				}
 			}
@@ -572,43 +559,29 @@ class Main extends PluginBase implements Listener {
 				for ( $y=5;$y<$lvh;++$y ) {
 					if ( $this->islift($world, $x, $y, $z) ) {
 						$cancel = true;
-						$btyy = $b->y+3;
-						if ( $btyy === $y ) {
+						$targetY = $b->y+3;
+						if ( $targetY === $y ) {
 							$p->sendMessage(TF::GREEN . '> 升降機已經到達');
 							return $cancel;
 						}
 						$v3 = new Vector3($x, $y, $z);
 						$hash = self::getLiftHash($world, $v3);
-						if ( !isset($this->movinglift[$hash]) ) {
-							$this->movinglift[$hash] = [
-								0=>Position::fromObject($v3, $world),
-								1=>[],
-								2=>self::MOVEMENT_STOP,
-								3=>false,
-								4=>false,
-								5=>false,
-								6=>false,
-								7=>true,
-								8=>false,
-								9=>$this->getliftsize($world, $v3),
-								10=>true,
-							];
-						} else {
-							if ( $this->movinglift[$hash][10] === false ) {
-								$this->movinglift[$hash][10] = true;
-							}
-						}
-						if ( !isset($this->queue[$hash]) ) {
-							$this->queue[$hash] = [];
-						}
-						$xyzhash = $btyy;
 
-						// xyzhash=>[ 0=>Position,1=>btyy,2=>setblock_timer ]
-						$this->queue[$hash][$xyzhash] ??= [
-							0=>$b,
-							1=>$btyy,
-							2=>0,
-						];
+						$movingLift = ($this->movingLift[$hash] ??= new MovingLift(
+							position: Position::fromObject($v3, $world),
+							movement: self::MOVEMENT_STOP,
+							waiting: null,
+							moving: false,
+							playSound: false,
+							targetY: null,
+							unset: true,
+							liftSize: $this->getliftsize($world, $v3),
+							fastMode: true,
+						));
+						$movingLift->fastMode = true;
+
+						$movingLift->queue[$targetY] ??= new QueueEntry($b, $targetY);
+
 						return $cancel;
 					}
 				}
@@ -618,21 +591,25 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public function liftcheckplayer ( World $world, $hash ) {
-		$lift = ($this->movinglift[$hash] ?? null);
-		if ( $lift === null ) {
+		$movingLift = ($this->movingLift[$hash] ?? null);
+		if ( $movingLift === null ) {
 			return;
 		}
 
-		$inLiftEntities = [];
-		$v3 = $lift[0];
-		if ( $lift[9] === 5 ) {
-			$addmin = -2;
-			$addmax = 2;
-		} elseif ( $lift[9] === 3 ) {
-			$addmin = -1;
-			$addmax = 1;
-		} else {
-			$addmin = $addmax = 0;
+		$insideEntities = [];
+		$v3 = $movingLift->position;
+		switch ( $movingLift->getLiftSize() ) {
+			case 5;
+				$addmin = -2;
+				$addmax = 2;
+				break;
+			case 3;
+				$addmin = -1;
+				$addmax = 1;
+				break;
+			default;
+				$addmin = $addmax = 0;
+				break;
 		}
 		$minx = $v3->x+$addmin;
 		$maxx = $v3->x+$addmax+1;
@@ -644,10 +621,10 @@ class Main extends PluginBase implements Listener {
 			$ispl = ($pl instanceof Player);
 			$pos = $pl->getPosition();
 			if ( (!$ispl or !$pl->getGamemode()->equals(GameMode::SPECTATOR())) and $pos->x > $minx and $pos->x < $maxx and $pos->z > $minz and $pos->z < $maxz and $pos->y > $miny and $pos->y < $maxy ) {
-				$inLiftEntities[$pl->getId()] = $pl;
+				$insideEntities[$pl->getId()] = $pl;
 			}
 		}
-		$this->movinglift[$hash][1] = $inLiftEntities;
+		$movingLift->insideEntities = $insideEntities;
 	}
 
 	public function getliftsize ( World $world, Vector3 $pos ) {
@@ -743,8 +720,8 @@ class Main extends PluginBase implements Listener {
 		$cause = $e->getCause();
 		if ( $cause === EntityDamageEvent::CAUSE_FALL or $cause === EntityDamageEvent::CAUSE_SUFFOCATION ) {
 			$entityId = $e->getEntity()->getId();
-			foreach ( $this->movinglift as $data ) {
-				if ( isset($data[1][$entityId]) ) {
+			foreach ( $this->movingLift as $movingLift ) {
+				if ( isset($movingLift->insideEntities[$entityId]) ) {
 					$e->cancel();
 					return;
 				}
