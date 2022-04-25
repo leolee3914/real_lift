@@ -508,13 +508,14 @@ class Main extends PluginBase implements Listener {
 							return;
 						}
 					}
+					$movement = ($b_pos->y > $p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN);
 					$this->movingLift[$hash] = new MovingLift(
 						position: Position::fromObject($v3, $world),
-						movement: $b_pos->y > $p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
+						movement: $movement,
 						waiting: null,
 						moving: false,
 						playSound: false,
-						targetY: null,
+						targetY: $movement === self::MOVEMENT_UP ? $world->getMaxY() - 1 : $world->getMinY() + 5,
 						unset: false,
 						liftSize: $this->getLiftSizeByPosition($world, $v3),
 						fastMode: false,
@@ -569,7 +570,7 @@ class Main extends PluginBase implements Listener {
 							waiting: null,
 							moving: false,
 							playSound: false,
-							targetY: null,
+							targetY: $v3->y,
 							unset: true,
 							liftSize: $this->getLiftSizeByPosition($world, $v3),
 							fastMode: true,

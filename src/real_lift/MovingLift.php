@@ -14,8 +14,6 @@ class MovingLift {
 	/** @var array<int, Entity|Player> */
 	public array $insideEntities = [];
 
-	public int $targetY;
-
 	/** @var array<int, QueueEntry> */
 	public array $queue = [];
 
@@ -27,14 +25,11 @@ class MovingLift {
 		public ?int $waiting,
 		public bool $moving,
 		public bool $playSound,
-		?int $targetY,
+		public int $targetY,
 		public bool $unset,
 		private int $liftSize,
 		public bool $fastMode,
 	) {
-		if ( $targetY !== null ) {
-			$this->targetY = $targetY;
-		}
 		$this->verifySize();
 	}
 
