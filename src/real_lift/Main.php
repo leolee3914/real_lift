@@ -397,7 +397,7 @@ class Main extends PluginBase implements Listener {
 		}
 
 		$n = $p->getName();
-		if ( isset($this->sendFormCoolDown[$n]) and $this->sendFormCoolDown[$n] > hrtime(true) ) {
+		if ( ($this->sendFormCoolDown[$n] ?? 0) > hrtime(true) ) {
 			return;
 		}
 		$this->sendFormCoolDown[$n] = hrtime(true) + 700_000_000;//0.7s
