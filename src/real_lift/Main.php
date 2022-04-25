@@ -445,7 +445,7 @@ class Main extends PluginBase implements Listener {
 			if ( $data === 0 or $data === (count($floorList)-1) ) {
 				$fast_mode = 0;
 			}
-			$hash = self::lifthash($world, $v3);
+			$hash = self::getLiftHash($world, $v3);
 			if ( !isset($this->movinglift[$hash]) and $this->islift($world, $v3) ) {
 				$this->movinglift[$hash] = [
 					0=>Position::fromObject($v3, $world),
@@ -490,7 +490,7 @@ class Main extends PluginBase implements Listener {
 			}
 			if ( $this->islift($world, $v3) ) {
 				$e->cancel();
-				$hash = self::lifthash($world, $v3);
+				$hash = self::getLiftHash($world, $v3);
 				if ( !isset($this->movinglift[$hash]) ) {
 					if ( $this->multiple_floors_mode ) {
 						$lvh = $world->getMaxY();
@@ -578,7 +578,7 @@ class Main extends PluginBase implements Listener {
 							return $cancel;
 						}
 						$v3 = new Vector3($x, $y, $z);
-						$hash = self::lifthash($world, $v3);
+						$hash = self::getLiftHash($world, $v3);
 						if ( !isset($this->movinglift[$hash]) ) {
 							$this->movinglift[$hash] = [
 								0=>Position::fromObject($v3, $world),
@@ -735,8 +735,8 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public static function lifthash ( World $world, Vector3 $v3 ) {
-		return ( $world->getFolderName() . ';' . ((int) $v3->x) . ';' . ((int) $v3->z) );
+	public static function getLiftHash ( World $world, Vector3 $v3 ) : string {
+		return $world->getFolderName() . pack('J', (((int) $v3->x) << 32) | (((int) $v3->z) & 0xffffffff));
 	}
 
 	public function pvp ( EntityDamageEvent $e ) {
