@@ -244,7 +244,7 @@ class Main extends PluginBase implements Listener {
 					$movingLift->fastMode = false;
 				}
 			}
-			$airid = [];
+			$fillerIds = [];
 			$stop = false;
 			if ( $movingLift->movement === self::MOVEMENT_UP and $canmove ) {
 				if ( ($pos->y+1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
@@ -252,8 +252,8 @@ class Main extends PluginBase implements Listener {
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getId();
-						if ( $stop or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
+						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getId();
+						if ( $stop or ($curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -265,8 +265,8 @@ class Main extends PluginBase implements Listener {
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-						$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getId();
-						if ( $stop or ($airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS) ) {
+						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getId();
+						if ( $stop or ($curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -300,7 +300,7 @@ class Main extends PluginBase implements Listener {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, $setBlock, false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airid[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $fillerIds[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
 						}
 					}
@@ -318,7 +318,7 @@ class Main extends PluginBase implements Listener {
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airid[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $fillerIds[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
@@ -354,12 +354,12 @@ class Main extends PluginBase implements Listener {
 		}
 		$mixy = $pos->y+$h-5;
 		$maxy = $pos->y+$h;
-		$airid = [];
+		$fillerIds = [];
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addy=$mixy;$addy<=$maxy;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-					$airid[] = $airid2 = $world->getBlockAt($pos->x+$addx, $addy, $pos->z+$addz, false, false)->getId();
-					if ( $airid2 !== BlockLegacyIds::AIR and $airid2 !== BlockLegacyIds::GLASS ) {
+					$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $addy, $pos->z+$addz, false, false)->getId();
+					if ( $curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS ) {
 						return false;
 					}
 				}
@@ -373,7 +373,7 @@ class Main extends PluginBase implements Listener {
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addy=($pos->y-5);$addy<=$pos->y;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, array_shift($airid) === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, array_shift($fillerIds) === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
 				}
 			}
 		}
