@@ -419,7 +419,6 @@ class Main extends PluginBase implements Listener {
 			if ( $data === null ) {
 				return;
 			}
-			$n = $p->getName();
 
 			$data = (int) $data;
 			if ( !isset($floorList[$data]) ) {
