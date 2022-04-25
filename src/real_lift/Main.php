@@ -489,9 +489,9 @@ class Main extends PluginBase implements Listener {
 						$floorList = [];
 						$fast_mode = false;
 						for ( $y = $worldMaxY - 1; $y >= $liftMinY; --$y ) {
-							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
-								$x = $v3->x+$xz[0];
-								$z = $v3->z+$xz[1];
+							foreach ( self::QUEUE_CHECK_XZ_SIGN as [$offsetX, $offsetZ] ) {
+								$x = $v3->x + $offsetX;
+								$z = $v3->z + $offsetZ;
 								$signY = $y - 3;
 								$signBlock = $world->getBlockAt($x, $signY, $z, false, false);
 								if ( $signBlock instanceof BaseSign ) {
@@ -556,9 +556,9 @@ class Main extends PluginBase implements Listener {
 		$world = $b->getWorld();
 		$worldMaxY = $world->getMaxY();
 		if ( $b->y >= ($world->getMinY() + 2) and $b->y <= ($worldMaxY - 4) ) {
-			foreach ( $checkxz as $xz ) {
-				$x = $b->x+$xz[0];
-				$z = $b->z+$xz[1];
+			foreach ( $checkxz as [$offsetX, $offsetZ] ) {
+				$x = $b->x + $offsetX;
+				$z = $b->z + $offsetZ;
 				for ( $y = 5; $y < $worldMaxY; ++$y ) {
 					if ( $this->islift($world, $x, $y, $z) ) {
 						$cancel = true;
