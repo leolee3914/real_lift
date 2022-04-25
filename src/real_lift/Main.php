@@ -245,8 +245,8 @@ class Main extends PluginBase implements Listener {
 				$data[10] = true;
 			}
 			if ( $data[10] === true ) {
-				$switchblock = $this->switchblock($data, $data[2], $data[6]-$pos->y, $pls, $addmin, $addmax);
-				if ( $switchblock ) {
+				$swapBlock = $this->swapBlock($data, $data[2], $data[6]-$pos->y, $pls, $addmin, $addmax);
+				if ( $swapBlock ) {
 					$data[4] = true;
 					continue;
 				} else {
@@ -346,7 +346,7 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	public function switchblock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
+	public function swapBlock ( &$data, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $data[0];
 		$world = $pos->getWorld();
 		if ( $updown === self::MOVEMENT_UP ) {
