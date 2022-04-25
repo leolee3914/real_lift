@@ -115,7 +115,7 @@ class Main extends PluginBase implements Listener {
 		return $pk;
 	}
 
-	public function move_lift () {
+	public function move_lift () : void {
 		foreach ( $this->movingLift as $hash=>$movingLift ) {
 			$pos = $movingLift->position;
 			$world = $pos->getWorld();
@@ -394,7 +394,7 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public function sendForm ( Player $p, array $floorList ) {
+	public function sendForm ( Player $p, array $floorList ) : void {
 		if ( !$this->multiple_floors_mode ) {
 			return;
 		}
