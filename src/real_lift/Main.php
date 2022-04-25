@@ -52,7 +52,6 @@ class Main extends PluginBase implements Listener {
 
 	public array $queue = [];
 
-	public array $floorlist = [];
 	public array $floorlistliftpos = [];
 
 	public array $sendformtime = [];
@@ -92,7 +91,6 @@ class Main extends PluginBase implements Listener {
 		$p = $e->getPlayer();
 		$n = $p->getName();
 
-		unset($this->floorlist[$n]);
 		unset($this->floorlistliftpos[$n]);
 		unset($this->sendformtime[$n]);
 	}
@@ -406,76 +404,67 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public function sendform ( Player $p, int $formId ) {
+	public function sendForm ( Player $p, array $floorList ) {
+		if ( !$this->multiple_floors_mode ) {
+			return;
+		}
+
 		$n = $p->getName();
 		if ( isset($this->sendformtime[$n]) and $this->sendformtime[$n] > microtime(true) ) {
 			return;
 		}
 		$this->sendformtime[$n] = microtime(true)+0.7;
-		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
-			return;
-		}
-		switch ( $formId ) {
-			case 0;
-				$data = [
-					'type'=>'form',
-					'title'=>TF::DARK_BLUE . '升降機' . ($this->floorlistliftpos[$n][3]===true ? ' (快速模式)' : ''),
-					'content'=>TF::YELLOW . "請選擇樓層:\n",
-					'buttons'=>[],
-				];
-				foreach ( $this->floorlist[$n] as $floor ) {
-					$data['buttons'][] = ['text'=>$floor[0]];
-				}
-				break;
-		}
-		new Form($p, $data, function (Player $p, $data) use ($formId) {
-			$this->handleForm($p, $data, $formId);
-		});
-	}
 
-	public function handleForm ( Player $p, $data, int $formId ) {
-		if ( $data === null ) {
-			return;
+		$data = [
+			'type'=>'form',
+			'title'=>TF::DARK_BLUE . '升降機' . ($this->floorlistliftpos[$n][3]===true ? ' (快速模式)' : ''),
+			'content'=>TF::YELLOW . "請選擇樓層:\n",
+			'buttons'=>[],
+		];
+		foreach ( $floorList as $floor ) {
+			$data['buttons'][] = ['text'=>$floor[0]];
 		}
-		$n = $p->getName();
-		if ( !$this->multiple_floors_mode or !isset($this->floorlist[$n]) ) {
-			return;
-		}
-		switch ( $formId ) {
-			case 0;
-				$data = (int) $data;
-				if ( !isset($this->floorlist[$n][$data]) ) {
-					return;
-				}
-				$pos = $this->floorlistliftpos[$n];
-				$world = $pos[0];
-				$v3 = $pos[1];
-				$fast_mode = $pos[3];
-				if ( $data === 0 or $data === (count($this->floorlist[$n])-1) ) {
-					$fast_mode = 0;
-				}
-				$hash = self::lifthash($world, $v3);
-				if ( !isset($this->movinglift[$hash]) and $this->islift($world, $v3) ) {
-					$this->movinglift[$hash] = [
-						0=>Position::fromObject($v3, $world),
-						1=>[],
-						2=>($this->floorlist[$n][$data][1]>$v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
-						3=>false,
-						4=>false,
-						5=>false,
-						6=>$this->floorlist[$n][$data][1],
-						7=>false,
-						8=>false,
-						9=>$this->getliftsize($world, $v3),
-						10=>$fast_mode,
-					];
-				} else {
-					$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
-				}
-				unset($this->floorlist[$n]);
-				unset($this->floorlistliftpos[$n]);
-				break;
-		}
+
+		new Form($p, $data, function (Player $p, $data) use ($floorList) {
+			if ( !$this->multiple_floors_mode ) {
+				return;
+			}
+			if ( $data === null ) {
+				return;
+			}
+			$n = $p->getName();
+
+			$data = (int) $data;
+			if ( !isset($floorList[$data]) ) {
+				return;
+			}
+			$pos = $this->floorlistliftpos[$n];
+			$world = $pos[0];
+			$v3 = $pos[1];
+			$fast_mode = $pos[3];
+			if ( $data === 0 or $data === (count($floorList)-1) ) {
+				$fast_mode = 0;
+			}
+			$hash = self::lifthash($world, $v3);
+			if ( !isset($this->movinglift[$hash]) and $this->islift($world, $v3) ) {
+				$this->movinglift[$hash] = [
+					0=>Position::fromObject($v3, $world),
+					1=>[],
+					2=>($floorList[$data][1]>$v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN),
+					3=>false,
+					4=>false,
+					5=>false,
+					6=>$floorList[$data][1],
+					7=>false,
+					8=>false,
+					9=>$this->getliftsize($world, $v3),
+					10=>$fast_mode,
+				];
+			} else {
+				$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
+			}
+			unset($this->floorlistliftpos[$n]);
+		});
 	}
 
 	/**
@@ -505,7 +494,7 @@ class Main extends PluginBase implements Listener {
 				if ( !isset($this->movinglift[$hash]) ) {
 					if ( $this->multiple_floors_mode ) {
 						$lvh = $world->getMaxY();
-						$floorlist = [];
+						$floorList = [];
 						$fast_mode = false;
 						for ( $y=$lvh-1;$y>=5;--$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
@@ -516,7 +505,7 @@ class Main extends PluginBase implements Listener {
 								if ( $signBlock instanceof BaseSign ) {
 									$signText = $signBlock->getText();
 									if ( strtolower($signText->getLine(0)) === '[lift]' ) {
-										$floorlist[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y-4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+										$floorList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y-4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
 										if ( !$fast_mode and strtolower($signText->getLine(2)) === 'fast' ) {
 											$fast_mode = true;
 										}
@@ -526,12 +515,11 @@ class Main extends PluginBase implements Listener {
 							}
 							nextY:
 						}
-						if ( count($floorlist) !== 0 ) {
-							array_unshift($floorlist, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
-							$floorlist[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
-							$this->floorlist[$n] = $floorlist;
+						if ( count($floorList) !== 0 ) {
+							array_unshift($floorList, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
+							$floorList[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
 							$this->floorlistliftpos[$n] = [$world, $v3, $p, $fast_mode];
-							$this->sendform($p, 0);
+							$this->sendForm($p, $floorList);
 							return;
 						}
 					}
