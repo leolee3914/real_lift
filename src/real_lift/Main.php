@@ -51,7 +51,7 @@ class Main extends PluginBase implements Listener {
 	/** @var array<string, MovingLift> */
 	public array $movingLift = [];
 
-	public array $sendformtime = [];
+	public array $sendFormCoolDown = [];
 
 	public function onEnable () : void {
 		self::$instance = $this;
@@ -88,7 +88,7 @@ class Main extends PluginBase implements Listener {
 		$p = $e->getPlayer();
 		$n = $p->getName();
 
-		unset($this->sendformtime[$n]);
+		unset($this->sendFormCoolDown[$n]);
 	}
 
 	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) : PlaySoundPacket {
@@ -397,10 +397,10 @@ class Main extends PluginBase implements Listener {
 		}
 
 		$n = $p->getName();
-		if ( isset($this->sendformtime[$n]) and $this->sendformtime[$n] > microtime(true) ) {
+		if ( isset($this->sendFormCoolDown[$n]) and $this->sendFormCoolDown[$n] > hrtime(true) ) {
 			return;
 		}
-		$this->sendformtime[$n] = microtime(true)+0.7;
+		$this->sendFormCoolDown[$n] = hrtime(true) + 700_000_000;//0.7s
 
 		$data = [
 			'type'=>'form',
