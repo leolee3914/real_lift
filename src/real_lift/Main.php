@@ -247,7 +247,7 @@ class Main extends PluginBase implements Listener {
 			$fillerIds = [];
 			$stop = false;
 			if ( $movingLift->movement === self::MOVEMENT_UP and $canmove ) {
-				if ( ($pos->y+1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
+				if ( ($pos->y + 1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
@@ -260,7 +260,7 @@ class Main extends PluginBase implements Listener {
 					}
 				}
 			} elseif ( $movingLift->movement === self::MOVEMENT_DOWN and $canmove ) {
-				if ( $pos->y <= 5 or $pos->y === $movingLift->targetY ) {
+				if ( ($pos->y - 5) <= $world->getMinY() or $pos->y === $movingLift->targetY ) {
 					$stop = true;
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
@@ -336,16 +336,16 @@ class Main extends PluginBase implements Listener {
 		}
 	}
 
-	public function swapBlock ( MovingLift $movingLift, $updown, $h, $pls, $addmin=0, $addmax=0 ) {
+	public function swapBlock ( MovingLift $movingLift, int $movement, int $h, $pls, $addmin=0, $addmax=0 ) {
 		$pos = $movingLift->position;
 		$world = $pos->getWorld();
-		if ( $updown === self::MOVEMENT_UP ) {
-			if ( $h < 6 or ($pos->y+6) >= $world->getMaxY() ) {
+		if ( $movement === self::MOVEMENT_UP ) {
+			if ( $h < 6 or ($pos->y + 6) > ($world->getMaxY() - 1) ) {
 				return false;
 			}
 			$h = 6;
-		} elseif ( $updown === self::MOVEMENT_DOWN ) {
-			if ( $h > -6 or ($pos->y-5) <= 5 ) {
+		} elseif ( $movement === self::MOVEMENT_DOWN ) {
+			if ( $h > -6 or ($pos->y - 5 - 6) < $world->getMinY() ) {
 				return false;
 			}
 			$h = -6;
@@ -482,15 +482,18 @@ class Main extends PluginBase implements Listener {
 				$movingLift = ($this->movingLift[$hash] ?? null);
 				if ( $movingLift === null ) {
 					if ( $this->multiple_floors_mode ) {
-						$lvh = $world->getMaxY();
+						$worldMaxY = $world->getMaxY();
+						$worldMinY = $world->getMinY();
+						$liftMinY = $worldMinY + 5;
+
 						$floorList = [];
 						$fast_mode = false;
-						for ( $y=$lvh-1;$y>=5;--$y ) {
+						for ( $y = $worldMaxY - 1; $y >= $liftMinY; --$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as $xz ) {
 								$x = $v3->x+$xz[0];
 								$z = $v3->z+$xz[1];
-								$yy = $y-3;
-								$signBlock = $world->getBlockAt($x, $yy, $z, false, false);
+								$signY = $y - 3;
+								$signBlock = $world->getBlockAt($x, $signY, $z, false, false);
 								if ( $signBlock instanceof BaseSign ) {
 									$signText = $signBlock->getText();
 									if ( strtolower($signText->getLine(0)) === '[lift]' ) {
@@ -505,8 +508,8 @@ class Main extends PluginBase implements Listener {
 							nextY:
 						}
 						if ( count($floorList) !== 0 ) {
-							array_unshift($floorList, [TF::DARK_RED . '最高層 (高度:' . ($lvh-5) . ')', $lvh-1]);
-							$floorList[] = [TF::DARK_RED . '最低層 (高度:1)', 5];
+							array_unshift($floorList, [TF::DARK_RED . '最高層 (高度:' . ($worldMaxY - 5) . ')', $worldMaxY-1]);
+							$floorList[] = [TF::DARK_RED . '最低層 (高度:' . ($worldMinY + 1) . ')', $liftMinY];
 							$this->floorlistliftpos[$n] = [$world, $v3, $p, $fast_mode];
 							$this->sendForm($p, $floorList);
 							return;
@@ -551,12 +554,12 @@ class Main extends PluginBase implements Listener {
 	public function checkqueue ( Player $p, Position $b, array $checkxz ) {
 		$cancel = false;
 		$world = $b->getWorld();
-		$lvh = $world->getMaxY();
-		if ( $b->y >= 2 and $b->y <= ($lvh-4) ) {
+		$worldMaxY = $world->getMaxY();
+		if ( $b->y >= ($world->getMinY() + 2) and $b->y <= ($worldMaxY - 4) ) {
 			foreach ( $checkxz as $xz ) {
 				$x = $b->x+$xz[0];
 				$z = $b->z+$xz[1];
-				for ( $y=5;$y<$lvh;++$y ) {
+				for ( $y = 5; $y < $worldMaxY; ++$y ) {
 					if ( $this->islift($world, $x, $y, $z) ) {
 						$cancel = true;
 						$targetY = $b->y+3;
