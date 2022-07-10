@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace real_lift;
 
 use pocketmine\block\BaseSign;
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
+use pocketmine\block\RedstoneLamp;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\Listener;
@@ -131,13 +132,11 @@ class Main extends PluginBase implements Listener {
 						if ( $block instanceof BaseSign ) {
 							$world->broadcastPacketToViewers($queueEntryPos, self::createParticlePacket($queueEntryPos->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
 						} else {
-							switch ( $block->getId() ) {
-								case BlockLegacyIds::REDSTONE_LAMP;
-									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP()->setPowered(true), false);
-									break;
-								case BlockLegacyIds::LIT_REDSTONE_LAMP;
-									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP(), false);
-									break;
+							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP ) {
+								/** @var RedstoneLamp $block */
+								$block->setPowered(!$block->isPowered());
+
+								$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, $block, false);
 							}
 						}
 						$queueEntry->buttonBlinkTimer = 6;
@@ -153,8 +152,14 @@ class Main extends PluginBase implements Listener {
 							$queueEntryPos = $queueEntry->position;
 
 							$first = false;
-							if ( $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false)->getId() === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
-								$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, VanillaBlocks::REDSTONE_LAMP(), false);
+
+							$block = $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false);
+							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP ) {
+								/** @var RedstoneLamp $block */
+								if ( $block->isPowered() ) {
+									$block->setPowered(false);
+									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, $block, false);
+								}
 							}
 							unset($movingLift->queue[$queueY]);
 						} else {
@@ -249,8 +254,8 @@ class Main extends PluginBase implements Listener {
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getId();
-						if ( $stop or ($curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS) ) {
+						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, false, false)->getTypeId();
+						if ( $stop or ($curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -262,8 +267,8 @@ class Main extends PluginBase implements Listener {
 				}
 				for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 					for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getId();
-						if ( $stop or ($curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS) ) {
+						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, false, false)->getTypeId();
+						if ( $stop or ($curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
@@ -296,7 +301,7 @@ class Main extends PluginBase implements Listener {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
 							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y+1, $pos->z+$addz, $setBlock, false);
-							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $fillerIds[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $fillerIds[$ii++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-4, $pos->z+$addz, $setBlock, false);
 						}
 					}
@@ -314,7 +319,7 @@ class Main extends PluginBase implements Listener {
 					for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 						for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
 							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $fillerIds[$ii++] === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($pos->x+$addx, $pos->y, $pos->z+$addz, $fillerIds[$ii++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-1, $pos->z+$addz, $setBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-5, $pos->z+$addz, $airBlock, false);
 							$world->setBlockAt($pos->x+$addx, $pos->y-6, $pos->z+$addz, $setBlock, false);
@@ -354,8 +359,8 @@ class Main extends PluginBase implements Listener {
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addy=$mixy;$addy<=$maxy;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-					$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $addy, $pos->z+$addz, false, false)->getId();
-					if ( $curFillerId !== BlockLegacyIds::AIR and $curFillerId !== BlockLegacyIds::GLASS ) {
+					$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x+$addx, $addy, $pos->z+$addz, false, false)->getTypeId();
+					if ( $curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS ) {
 						return false;
 					}
 				}
@@ -369,7 +374,7 @@ class Main extends PluginBase implements Listener {
 		for ( $addx=$addmin;$addx<=$addmax;++$addx ) {
 			for ( $addy=($pos->y-5);$addy<=$pos->y;++$addy ) {
 				for ( $addz=$addmin;$addz<=$addmax;++$addz ) {
-					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, array_shift($fillerIds) === BlockLegacyIds::GLASS ? $glassBlock : $airBlock, false);
+					$world->setBlockAt($pos->x+$addx, $addy, $pos->z+$addz, array_shift($fillerIds) === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
 				}
 			}
 		}
@@ -464,8 +469,8 @@ class Main extends PluginBase implements Listener {
 		$b = $e->getBlock();
 		$b_pos = $b->getPosition();
 		$world = $b_pos->getWorld();
-		$id = $b->getId();
-		if ( $id === BlockLegacyIds::GOLD_BLOCK ) {
+		$id = $b->getTypeId();
+		if ( $id === BlockTypeIds::GOLD ) {
 			$v3 = $b_pos->asVector3();
 			if ( $b_pos->y < $p->getPosition()->y ) {
 				$v3->y += 5;
@@ -528,7 +533,7 @@ class Main extends PluginBase implements Listener {
 					$p->sendMessage(TF::GREEN . '> 已停止升降機');
 				}
 			}
-		} elseif ( $id === BlockLegacyIds::REDSTONE_LAMP or $id === BlockLegacyIds::LIT_REDSTONE_LAMP ) {
+		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
 			if ( !$p->isSneaking() ) {
 				$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancel ) {
@@ -634,10 +639,10 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public function isLiftColumnIronBlock ( World $world, Vector3 $pos ) : bool {
-		return $this->isLiftColumn($world, $pos, BlockLegacyIds::IRON_BLOCK);
+		return $this->isLiftColumn($world, $pos, BlockTypeIds::IRON);
 	}
 
-	public function isLiftColumn ( World $world, Vector3 $pos, $blockId = BlockLegacyIds::GOLD_BLOCK ) : bool {
+	public function isLiftColumn ( World $world, Vector3 $pos, $blockId = BlockTypeIds::GOLD ) : bool {
 		$y = $pos->y;
 
 		if ( $y > ($world->getMaxY() - 1) ) {
@@ -650,14 +655,14 @@ class Main extends PluginBase implements Listener {
 
 		foreach ( [
 			$blockId,
-			BlockLegacyIds::AIR,
-			BlockLegacyIds::AIR,
-			BlockLegacyIds::AIR,
-			BlockLegacyIds::AIR,
+			BlockTypeIds::AIR,
+			BlockTypeIds::AIR,
+			BlockTypeIds::AIR,
+			BlockTypeIds::AIR,
 			$blockId,
 		] as $i=>$id ) {
 			$yToCheck = $y - $i;
-			if ( $yToCheck < $worldMinY or $world->getBlockAt($x, $yToCheck, $z, false, false)->getId() !== $id ) {
+			if ( $yToCheck < $worldMinY or $world->getBlockAt($x, $yToCheck, $z, false, false)->getTypeId() !== $id ) {
 				return false;
 			}
 		}
