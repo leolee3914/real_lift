@@ -33,7 +33,7 @@ class MovingLift {
 		$this->verifySize();
 	}
 
-	public function verifySize (): void {
+	public function verifySize () : void {
 		match ( $this->liftSize ) {
 			1, 3, 5 => true,
 			default => throw new \InvalidArgumentException("Invalid lift size: {$this->liftSize}"),
@@ -53,4 +53,3 @@ class MovingLift {
 	}
 
 }
-
