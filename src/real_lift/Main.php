@@ -721,7 +721,7 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public static function getLiftHash ( World $world, Vector3 $v3 ) : string {
-		return $world->getFolderName() . pack('J', (((int) $v3->x) << 32) | (((int) $v3->z) & 0xffffffff));
+		return pack('NJ', $world->getId(), (((int) $v3->x) << 32) | (((int) $v3->z) & 0xffffffff));
 	}
 
 	public function pvp ( EntityDamageEvent $e ) {
