@@ -757,7 +757,7 @@ class Form implements PMForm {
 		}
 	}
 
-	public function jsonSerialize () {
+	public function jsonSerialize () : mixed {
 		return $this->formData;
 	}
 
