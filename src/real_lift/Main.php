@@ -115,7 +115,7 @@ class Main extends PluginBase implements Listener {
 		$pk = new SpawnParticleEffectPacket();
 		$pk->position = $pos;
 		$pk->particleName = $pname;
-		$pk->molangVariablesJson = '';
+		$pk->molangVariablesJson = null;
 
 		return $pk;
 	}
