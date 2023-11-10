@@ -628,7 +628,7 @@ class Main extends PluginBase implements Listener {
 		$maxZ = $v3->z + $addmax + 1;
 		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($v3)) as $entity ) {
 			$pos = $entity->getPosition();
-			if ( (!$entity instanceof Player or !$entity->getGamemode()->equals(GameMode::SPECTATOR())) and $pos->x > $minX and $pos->x < $maxX and $pos->z > $minZ and $pos->z < $maxZ and $pos->y > $minY and $pos->y < $maxY ) {
+			if ( (!$entity instanceof Player or $entity->getGamemode() !== GameMode::SPECTATOR) and $pos->x > $minX and $pos->x < $maxX and $pos->z > $minZ and $pos->z < $maxZ and $pos->y > $minY and $pos->y < $maxY ) {
 				$insideEntities[$entity->getId()] = $entity;
 			}
 		}
