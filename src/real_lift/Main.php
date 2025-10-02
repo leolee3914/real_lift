@@ -501,13 +501,15 @@ class Main extends PluginBase implements Listener {
 								$signY = $y - 3;
 								$signBlock = $world->getBlockAt($x, $signY, $z, false, false);
 								if ( $signBlock instanceof BaseSign ) {
-									$signText = $signBlock->getText();
-									if ( strtolower($signText->getLine(0)) === '[lift]' ) {
-										$floorList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
-										if ( !$fast_mode and strtolower($signText->getLine(2)) === 'fast' ) {
-											$fast_mode = true;
+									foreach ( [true, false] as $signFrontFace ) {
+										$signText = $signBlock->getFaceText($signFrontFace);
+										if ( strtolower($signText->getLine(0)) === '[lift]' ) {
+											$floorList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+											if ( !$fast_mode and strtolower($signText->getLine(2)) === 'fast' ) {
+												$fast_mode = true;
+											}
+											goto nextY;
 										}
-										goto nextY;
 									}
 								}
 							}
@@ -548,7 +550,12 @@ class Main extends PluginBase implements Listener {
 					$e->cancel();
 				}
 			}
-		} elseif ( $b instanceof BaseSign and strtolower($b->getText()->getLine(0)) === '[lift]' ) {
+		} elseif ( $b instanceof BaseSign and match (true) {
+			strtolower($b->getFaceText(true)->getLine(0)) === '[lift]',
+			strtolower($b->getFaceText(false)->getLine(0)) === '[lift]',
+				=> true,
+			default => false,
+		} ) {
 			$e->cancel();
 			$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_SIGN);
 			if ( $cancel ) {
