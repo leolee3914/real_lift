@@ -68,26 +68,26 @@ class Main extends PluginBase implements Listener {
 
 		@mkdir($this->getDataFolder());
 		$config = new Config($this->getDataFolder() . 'config.yml', Config::YAML, []);
-		if ( !isset($config->multiple_floors_mode) ) {
-			$config->multiple_floors_mode = true;
+		if ( $config->exists('multiple_floors_mode') ) {
+			$config->set('multiple_floors_mode', true);
 			$config->save();
 		}
-		if ( !isset($config->enable3x3) ) {
-			$config->enable3x3 = true;
+		if ( $config->exists('enable3x3') ) {
+			$config->set('enable3x3', true);
 			$config->save();
 		}
-		if ( !isset($config->enable5x5) ) {
-			$config->enable5x5 = false;
+		if ( $config->exists('enable5x5') ) {
+			$config->set('enable5x5', false);
 			$config->save();
 		}
-		if ( !isset($config->tp_entity) ) {
-			$config->tp_entity = true;
+		if ( $config->exists('tp_entity') ) {
+			$config->set('tp_entity', true);
 			$config->save();
 		}
-		$this->multiple_floors_mode = (bool) $config->multiple_floors_mode;
-		$this->enable3x3 = (bool) $config->enable3x3;
-		$this->enable5x5 = (bool) $config->enable5x5;
-		$this->tp_entity = (bool) $config->tp_entity;
+		$this->multiple_floors_mode = (bool) $config->get('multiple_floors_mode');
+		$this->enable3x3 = (bool) $config->get('enable3x3');
+		$this->enable5x5 = (bool) $config->get('enable5x5');
+		$this->tp_entity = (bool) $config->get('tp_entity');
 
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(\Closure::fromCallable([$this, 'move_lift'])), 1);
 	}
