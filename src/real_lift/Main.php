@@ -68,19 +68,19 @@ class Main extends PluginBase implements Listener {
 
 		@mkdir($this->getDataFolder());
 		$config = new Config($this->getDataFolder() . 'config.yml', Config::YAML, []);
-		if ( $config->exists('multiple_floors_mode') ) {
+		if ( !$config->exists('multiple_floors_mode') ) {
 			$config->set('multiple_floors_mode', true);
 			$config->save();
 		}
-		if ( $config->exists('enable3x3') ) {
+		if ( !$config->exists('enable3x3') ) {
 			$config->set('enable3x3', true);
 			$config->save();
 		}
-		if ( $config->exists('enable5x5') ) {
+		if ( !$config->exists('enable5x5') ) {
 			$config->set('enable5x5', false);
 			$config->save();
 		}
-		if ( $config->exists('tp_entity') ) {
+		if ( !$config->exists('tp_entity') ) {
 			$config->set('tp_entity', true);
 			$config->save();
 		}
