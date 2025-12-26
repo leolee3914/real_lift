@@ -543,12 +543,10 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
-			if ( !$p->isSneakPressed() ) {
-				$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
-				if ( $cancel ) {
-					$world->broadcastPacketToViewers($b_pos, self::createPlaySoundPacket($b_pos, 'random.click', 1, 0.6));
-					$e->cancel();
-				}
+			$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
+			if ( $cancel ) {
+				$world->broadcastPacketToViewers($b_pos, self::createPlaySoundPacket($b_pos, 'random.click', 1, 0.6));
+				$e->cancel();
 			}
 		} elseif ( $b instanceof BaseSign and match (true) {
 			strtolower($b->getFaceText(true)->getLine(0)) === '[lift]',
