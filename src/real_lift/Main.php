@@ -469,7 +469,7 @@ class Main extends PluginBase implements Listener {
 			return;
 		}
 		$p = $e->getPlayer();
-		if ( $p->isSneaking() ) {
+		if ( $p->isSneakPressed() ) {
 			return;
 		}
 		$n = $p->getName();
@@ -543,7 +543,7 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
-			if ( !$p->isSneaking() ) {
+			if ( !$p->isSneakPressed() ) {
 				$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 				if ( $cancel ) {
 					$world->broadcastPacketToViewers($b_pos, self::createPlaySoundPacket($b_pos, 'random.click', 1, 0.6));
