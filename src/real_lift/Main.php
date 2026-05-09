@@ -100,13 +100,15 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) : PlaySoundPacket {
-		$pk = new PlaySoundPacket();
-		$pk->soundName = $sound;
-		$pk->x = $v3->x;
-		$pk->y = $v3->y;
-		$pk->z = $v3->z;
-		$pk->volume = $vol;
-		$pk->pitch = $pitch;
+		$pk = PlaySoundPacket::create(
+			$sound,
+			$v3->x,
+			$v3->y,
+			$v3->z,
+			$vol,
+			$pitch,
+			null,
+		);
 
 		return $pk;
 	}
