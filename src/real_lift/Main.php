@@ -399,7 +399,7 @@ class Main extends PluginBase implements Listener {
 	}
 
 	/**
-	 * @param array{0:string, 1:int}[] $floorDataList - [[0=>buttonText, 1=> floorY], ...]
+	 * @param array{0:string, 1:int}[] $floorDataList - [[0=>buttonText, 1=> targetY], ...]
 	 */
 	public function sendForm ( Player $p, array $floorDataList, World $world, Vector3 $liftPos, bool $fastMode ) : void {
 		if ( !$this->multiple_floors_mode ) {
