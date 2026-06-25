@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace real_lift;
 
-use pocketmine\world\Position;
+use pocketmine\math\Vector3;
 use function get_class;
 
 class QueueEntry {
@@ -12,7 +12,7 @@ class QueueEntry {
 	public int $buttonBlinkTimer = 0;
 
 	public function __construct (
-		public Position $position,
+		public Vector3 $position,
 		private int $targetY,
 	) {
 

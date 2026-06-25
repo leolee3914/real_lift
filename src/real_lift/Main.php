@@ -24,11 +24,13 @@ use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat as TF;
 use pocketmine\world\Position;
 use pocketmine\world\World;
+
 use function abs;
 use function array_shift;
 use function array_unshift;
 use function count;
 use function hrtime;
+use function is_int;
 use function mkdir;
 use function pack;
 use function strtolower;
@@ -39,13 +41,16 @@ class Main extends PluginBase implements Listener {
 	const MOVEMENT_DOWN = 1;
 	const MOVEMENT_STOP = 2;
 
+	/** @var int[][] */
 	const QUEUE_CHECK_XZ_REDSTONE_LAMP = [
-		[1,0],[0,1],[-1,0],[0,-1],
+		[1, 0], [0, 1], [-1, 0], [0, -1],
 	];
+
+	/** @var int[][] */
 	const QUEUE_CHECK_XZ_SIGN = [
-		[1,1],[-1,1],[1,-1],[-1,-1],
-		[2,2],[-2,2],[2,-2],[-2,-2],
-		[3,3],[-3,3],[3,-3],[-3,-3],
+		[1, 1], [-1, 1], [1, -1], [-1, -1],
+		[2, 2], [-2, 2], [2, -2], [-2, -2],
+		[3, 3], [-3, 3], [3, -3], [-3, -3],
 	];
 
 	private static self $instance;
@@ -56,10 +61,11 @@ class Main extends PluginBase implements Listener {
 
 	public bool $multiple_floors_mode, $enable3x3, $enable5x5, $tp_entity;
 
-	/** @var array<string, MovingLift> */
+	/** @var array<string, MovingLift> - [liftHash => class] */
 	public array $movingLift = [];
 
-	public array $sendFormCoolDown = [];
+	/** @var array<string, int> - [n => hrtime(true)] */
+	private array $sendFormCoolDown = [];
 
 	public function onEnable () : void {
 		self::$instance = $this;
@@ -68,84 +74,79 @@ class Main extends PluginBase implements Listener {
 
 		@mkdir($this->getDataFolder());
 		$config = new Config($this->getDataFolder() . 'config.yml', Config::YAML, []);
-		if ( !$config->exists('multiple_floors_mode') ) {
-			$config->set('multiple_floors_mode', true);
-			$config->save();
-		}
-		if ( !$config->exists('enable3x3') ) {
-			$config->set('enable3x3', true);
-			$config->save();
-		}
-		if ( !$config->exists('enable5x5') ) {
-			$config->set('enable5x5', false);
-			$config->save();
-		}
-		if ( !$config->exists('tp_entity') ) {
-			$config->set('tp_entity', true);
-			$config->save();
+		foreach ( [
+			'multiple_floors_mode' => true,
+			'enable3x3' => true,
+			'enable5x5' => false,
+			'tp_entity' => true,
+		] as $key => $defaultValue ) {
+			if ( !$config->exists($key) ) {
+				$config->set($key, $defaultValue);
+				$config->save();
+			}
 		}
 		$this->multiple_floors_mode = (bool) $config->get('multiple_floors_mode');
 		$this->enable3x3 = (bool) $config->get('enable3x3');
 		$this->enable5x5 = (bool) $config->get('enable5x5');
 		$this->tp_entity = (bool) $config->get('tp_entity');
 
-		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(\Closure::fromCallable([$this, 'move_lift'])), 1);
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->moveLift(...)), 1);
 	}
 
-	public function pq ( PlayerQuitEvent $e ) {
+	public function pq ( PlayerQuitEvent $e ) : void {
 		$p = $e->getPlayer();
 		$n = $p->getName();
 
 		unset($this->sendFormCoolDown[$n]);
 	}
 
-	public static function createPlaySoundPacket ( Vector3 $v3, string $sound, float $vol = 1.0, float $pitch = 1.0 ) : PlaySoundPacket {
-		$pk = PlaySoundPacket::create(
+	public static function createPlaySoundPacket ( Vector3 $pos, string $sound, float $vol = 1.0, float $pitch = 1.0 ) : PlaySoundPacket {
+		return PlaySoundPacket::create(
 			$sound,
-			$v3->x,
-			$v3->y,
-			$v3->z,
+			$pos->x,
+			$pos->y,
+			$pos->z,
 			$vol,
 			$pitch,
 			null,
 		);
-
-		return $pk;
 	}
 
-	public static function createParticlePacket ( Vector3 $pos, string $pname ) : SpawnParticleEffectPacket {
+	public static function createParticlePacket ( Vector3 $pos, string $particleName ) : SpawnParticleEffectPacket {
 		$pk = new SpawnParticleEffectPacket();
 		$pk->position = $pos;
-		$pk->particleName = $pname;
+		$pk->particleName = $particleName;
 		$pk->molangVariablesJson = null;
 
 		return $pk;
 	}
 
-	public function move_lift () : void {
+	private function moveLift () : void {
 		foreach ( $this->movingLift as $hash => $movingLift ) {
-			$pos = $movingLift->position;
-			$world = $pos->getWorld();
-			if ( !$world->isLoaded() or !$this->isLiftColumn($world, $pos) ) {
+			$liftPos = $movingLift->position;
+			$world = $liftPos->world;
+			if ( !$world->isLoaded() or !$this->isLiftColumn($world, $liftPos) ) {
 				unset($this->movingLift[$hash]);
 				continue;
 			}
+			$liftPosX = $liftPos->getFloorX();
+			$liftPosY = $liftPos->getFloorY();
+			$liftPosZ = $liftPos->getFloorZ();
 
-			$issetqueue = (count($movingLift->queue) > 0);
-			if ( $issetqueue ) {
+			$hasQueue = (count($movingLift->queue) > 0);
+			if ( $hasQueue ) {
 				foreach ( $movingLift->queue as $queueEntry ) {
 					if ( --$queueEntry->buttonBlinkTimer <= 0 ) {
 						$queueEntryPos = $queueEntry->position;
 
-						$block = $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false);
+						$block = $world->getBlockAt($queueEntryPos->getFloorX(), $queueEntryPos->getFloorY(), $queueEntryPos->getFloorZ(), false, false);
 						if ( $block instanceof BaseSign ) {
-							$world->broadcastPacketToViewers($queueEntryPos, self::createParticlePacket($queueEntryPos->add(0.5,0.5,0.5), 'minecraft:redstone_ore_dust_particle'));
+							$world->broadcastPacketToViewers($queueEntryPos, self::createParticlePacket($queueEntryPos->add(0.5, 0.5, 0.5), 'minecraft:redstone_ore_dust_particle'));
 						} else {
-							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP ) {
-								/** @var RedstoneLamp $block */
+							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP and $block instanceof RedstoneLamp ) {
 								$block->setPowered(!$block->isPowered());
 
-								$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, $block, false);
+								$world->setBlockAt($queueEntryPos->getFloorX(), $queueEntryPos->getFloorY(), $queueEntryPos->getFloorZ(), $block, false);
 							}
 						}
 						$queueEntry->buttonBlinkTimer = 6;
@@ -154,7 +155,7 @@ class Main extends PluginBase implements Listener {
 			}
 
 			if ( $movingLift->unset ) {
-				if ( $issetqueue ) {
+				if ( $hasQueue ) {
 					$first = true;
 					foreach ( $movingLift->queue as $queueY => $queueEntry ) {
 						if ( $first and $movingLift->hasQueue ) {
@@ -162,23 +163,22 @@ class Main extends PluginBase implements Listener {
 
 							$first = false;
 
-							$block = $world->getBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, false, false);
-							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP ) {
-								/** @var RedstoneLamp $block */
+							$block = $world->getBlockAt($queueEntryPos->getFloorX(), $queueEntryPos->getFloorY(), $queueEntryPos->getFloorZ(), false, false);
+							if ( $block->getTypeId() === BlockTypeIds::REDSTONE_LAMP and $block instanceof RedstoneLamp ) {
 								if ( $block->isPowered() ) {
 									$block->setPowered(false);
-									$world->setBlockAt($queueEntryPos->x,$queueEntryPos->y,$queueEntryPos->z, $block, false);
+									$world->setBlockAt($queueEntryPos->getFloorX(), $queueEntryPos->getFloorY(), $queueEntryPos->getFloorZ(), $block, false);
 								}
 							}
 							unset($movingLift->queue[$queueY]);
 						} else {
-							if ( $pos->y > $queueEntry->getTargetY() ) {
+							if ( $liftPosY > $queueEntry->getTargetY() ) {
 								$movingLift->movement = self::MOVEMENT_DOWN;
 								$movingLift->waiting = null;
 								$movingLift->targetY = $queueEntry->getTargetY();
 								$movingLift->unset = false;
 								$movingLift->hasQueue = true;
-							} elseif ( $pos->y < $queueEntry->getTargetY() ) {
+							} elseif ( $liftPosY < $queueEntry->getTargetY() ) {
 								$movingLift->movement = self::MOVEMENT_UP;
 								$movingLift->waiting = null;
 								$movingLift->targetY = $queueEntry->getTargetY();
@@ -200,7 +200,7 @@ class Main extends PluginBase implements Listener {
 					$movingLift->unset = true;
 				}
 				if ( $movingLift->waiting === 20 and $movingLift->playSound ) {
-					$world->broadcastPacketToViewers($pos, self::createPlaySoundPacket($pos, 'random.orb', 1, 2));
+					$world->broadcastPacketToViewers($liftPos, self::createPlaySoundPacket($liftPos, 'random.orb', 1, 2));
 				}
 				continue;
 			}
@@ -209,13 +209,13 @@ class Main extends PluginBase implements Listener {
 			foreach ( $insideEntities as $entity ) {
 				$entity->resetFallDistance();
 			}
-			$canmove = true;
+			$canMove = true;
 			if ( $movingLift->movement === self::MOVEMENT_UP ) {
 				foreach ( $insideEntities as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, 0.8, 0));
-						if ( $p->getPosition()->y < ($pos->y - 2.4) ) {
-							$canmove = false;
+						if ( $p->getPosition()->y < ($liftPosY - 2.4) ) {
+							$canMove = false;
 						}
 					}
 				}
@@ -223,31 +223,23 @@ class Main extends PluginBase implements Listener {
 				foreach ( $insideEntities as $p ) {
 					if ( $p instanceof Player ) {
 						$p->setMotion(new Vector3(0, -0.4, 0));
-						if ( $p->getPosition()->y > ($pos->y - 3) ) {
-							$canmove = false;
+						if ( $p->getPosition()->y > ($liftPosY - 3) ) {
+							$canMove = false;
 						}
 					}
 				}
 			}
-			switch ( $movingLift->getSize() ) {
-				case 5;
-					$addmin = -2;
-					$addmax = 2;
-					break;
-				case 3;
-					$addmin = -1;
-					$addmax = 1;
-					break;
-				default;
-					$addmin = $addmax = 0;
-					break;
-			}
+			$offset = match ( $movingLift->getSize() ) {
+				5 => 2,
+				3 => 1,
+				default => 0,
+			};
 
-			if ( $issetqueue and !$movingLift->fastMode ) {
+			if ( $hasQueue and !$movingLift->fastMode ) {
 				$movingLift->fastMode = true;
 			}
 			if ( $movingLift->fastMode ) {
-				$swapBlock = $this->swapBlock($movingLift, $movingLift->targetY - $pos->y, $addmin, $addmax);
+				$swapBlock = $this->swapBlock($movingLift, $movingLift->targetY - $liftPosY, $offset);
 				if ( $swapBlock ) {
 					$movingLift->moving = true;
 					continue;
@@ -255,36 +247,36 @@ class Main extends PluginBase implements Listener {
 					$movingLift->fastMode = false;
 				}
 			}
-			$fillerIds = [];
+			$fillerBlockIds = [];
 			$stop = false;
-			if ( $canmove and $movingLift->movement === self::MOVEMENT_UP ) {
-				if ( ($pos->y + 1) >= $world->getMaxY() or $pos->y === $movingLift->targetY ) {
+			if ( $canMove and $movingLift->movement === self::MOVEMENT_UP ) {
+				if ( ($liftPosY + 1) >= $world->getMaxY() or $liftPosY === $movingLift->targetY ) {
 					$stop = true;
 				}
-				for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-					for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x + $addx, $pos->y + 1, $pos->z + $addz, false, false)->getTypeId();
-						if ( $stop or ($curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS) ) {
+				for ( $X = -$offset; $X <= $offset; ++$X ) {
+					for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+						$fillerBlockIds[] = $curFillerBlockId = $world->getBlockAt($liftPosX + $X, $liftPosY + 1, $liftPosZ + $Z, false, false)->getTypeId();
+						if ( $stop or ($curFillerBlockId !== BlockTypeIds::AIR and $curFillerBlockId !== BlockTypeIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
 					}
 				}
-			} elseif ( $canmove and $movingLift->movement === self::MOVEMENT_DOWN ) {
-				if ( ($pos->y - 5) <= $world->getMinY() or $pos->y === $movingLift->targetY ) {
+			} elseif ( $canMove and $movingLift->movement === self::MOVEMENT_DOWN ) {
+				if ( ($liftPosY - 5) <= $world->getMinY() or $liftPosY === $movingLift->targetY ) {
 					$stop = true;
 				}
-				for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-					for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-						$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x + $addx, $pos->y - 6, $pos->z + $addz, false, false)->getTypeId();
-						if ( $stop or ($curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS) ) {
+				for ( $X = -$offset; $X <= $offset; ++$X ) {
+					for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+						$fillerBlockIds[] = $curFillerBlockId = $world->getBlockAt($liftPosX + $X, $liftPosY - 6, $liftPosZ + $Z, false, false)->getTypeId();
+						if ( $stop or ($curFillerBlockId !== BlockTypeIds::AIR and $curFillerBlockId !== BlockTypeIds::GLASS) ) {
 							$stop = true;
 							break 2;
 						}
 					}
 				}
 			} else {
-				$canmove = false;
+				$canMove = false;
 			}
 			if ( $stop ) {
 				if ( !$movingLift->moving ) {
@@ -296,22 +288,22 @@ class Main extends PluginBase implements Listener {
 				$movingLift->playSound = true;
 				continue;
 			}
-			if ( $canmove ) {
-				if ( $this->getLiftSizeByPosition($world, $pos) !== $movingLift->getSize() ) {
+			if ( $canMove ) {
+				if ( $this->getLiftSizeByPosition($world, $liftPos) !== $movingLift->getSize() ) {
 					unset($this->movingLift[$hash]);
 					continue;
 				}
 				if ( $movingLift->movement === self::MOVEMENT_UP ) {
-					$ii = 0;
+					$fillerBlockIdsIndex = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
-					for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-						for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x + $addx, $pos->y, $pos->z + $addz, $airBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y + 1, $pos->z + $addz, $setBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y - 5, $pos->z + $addz, $fillerIds[$ii++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y - 4, $pos->z + $addz, $setBlock, false);
+					for ( $X = -$offset; $X <= $offset; ++$X ) {
+						for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+							$setBlock = (($X === 0 and $Z === 0) ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
+							$world->setBlockAt($liftPosX + $X, $liftPosY, $liftPosZ + $Z, $airBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY + 1, $liftPosZ + $Z, $setBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY - 5, $liftPosZ + $Z, $fillerBlockIds[$fillerBlockIdsIndex++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY - 4, $liftPosZ + $Z, $setBlock, false);
 						}
 					}
 					foreach ( $insideEntities as $p ) {
@@ -319,19 +311,19 @@ class Main extends PluginBase implements Listener {
 							$p->teleport($p->getPosition()->add(0, 1, 0));
 						}
 					}
-					++$pos->y;
+					++$liftPos->y;
 					$movingLift->moving = true;
 				} elseif ( $movingLift->movement === self::MOVEMENT_DOWN ) {
-					$ii = 0;
+					$fillerBlockIdsIndex = 0;
 					$airBlock = VanillaBlocks::AIR();
 					$glassBlock = VanillaBlocks::GLASS();
-					for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-						for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-							$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-							$world->setBlockAt($pos->x + $addx, $pos->y, $pos->z + $addz, $fillerIds[$ii++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y - 1, $pos->z + $addz, $setBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y - 5, $pos->z + $addz, $airBlock, false);
-							$world->setBlockAt($pos->x + $addx, $pos->y - 6, $pos->z + $addz, $setBlock, false);
+					for ( $X = -$offset; $X <= $offset; ++$X ) {
+						for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+							$setBlock = (($X === 0 and $Z === 0) ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
+							$world->setBlockAt($liftPosX + $X, $liftPosY, $liftPosZ + $Z, $fillerBlockIds[$fillerBlockIdsIndex++] === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY - 1, $liftPosZ + $Z, $setBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY - 5, $liftPosZ + $Z, $airBlock, false);
+							$world->setBlockAt($liftPosX + $X, $liftPosY - 6, $liftPosZ + $Z, $setBlock, false);
 						}
 					}
 					foreach ( $insideEntities as $p ) {
@@ -339,37 +331,40 @@ class Main extends PluginBase implements Listener {
 							$p->teleport($p->getPosition()->add(0, -1, 0));
 						}
 					}
-					--$pos->y;
+					--$liftPos->y;
 					$movingLift->moving = true;
 				}
 			}
 		}
 	}
 
-	public function swapBlock ( MovingLift $movingLift, int $h, int $addmin, int $addmax ) : bool {
-		$pos = $movingLift->position;
-		$world = $pos->getWorld();
+	public function swapBlock ( MovingLift $movingLift, int $h, int $offset ) : bool {
+		$liftPos = $movingLift->position;
+		$posY = $liftPos->getFloorY();
+		$world = $liftPos->getWorld();
 		if ( $movingLift->movement === self::MOVEMENT_UP ) {
-			if ( $h < 6 or ($pos->y + 6) > ($world->getMaxY() - 1) ) {
+			if ( $h < 6 or ($posY + 6) > ($world->getMaxY() - 1) ) {
 				return false;
 			}
 			$h = 6;
 		} elseif ( $movingLift->movement === self::MOVEMENT_DOWN ) {
-			if ( $h > -6 or ($pos->y - 5 - 6) < $world->getMinY() ) {
+			if ( $h > -6 or ($posY - 5 - 6) < $world->getMinY() ) {
 				return false;
 			}
 			$h = -6;
 		} else {
 			return false;
 		}
-		$mixy = $pos->y + $h - 5;
-		$maxy = $pos->y + $h;
-		$fillerIds = [];
-		for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-			for ( $addy = $mixy;$addy <= $maxy;++$addy ) {
-				for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-					$fillerIds[] = $curFillerId = $world->getBlockAt($pos->x + $addx, $addy, $pos->z + $addz, false, false)->getTypeId();
-					if ( $curFillerId !== BlockTypeIds::AIR and $curFillerId !== BlockTypeIds::GLASS ) {
+		$posX = $liftPos->getFloorX();
+		$posZ = $liftPos->getFloorZ();
+		$minY = $posY + $h - 5;
+		$maxY = $posY + $h;
+		$fillerBlockIds = [];
+		for ( $X = -$offset; $X <= $offset; ++$X ) {
+			for ( $Y = $minY; $Y <= $maxY; ++$Y ) {
+				for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+					$fillerBlockIds[] = $curFillerBlockId = $world->getBlockAt($posX + $X, $Y, $posZ + $Z, false, false)->getTypeId();
+					if ( $curFillerBlockId !== BlockTypeIds::AIR and $curFillerBlockId !== BlockTypeIds::GLASS ) {
 						return false;
 					}
 				}
@@ -380,32 +375,35 @@ class Main extends PluginBase implements Listener {
 		}
 		$airBlock = VanillaBlocks::AIR();
 		$glassBlock = VanillaBlocks::GLASS();
-		for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-			for ( $addy = ($pos->y - 5);$addy <= $pos->y;++$addy ) {
-				for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-					$world->setBlockAt($pos->x + $addx, $addy, $pos->z + $addz, array_shift($fillerIds) === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
+		for ( $X = -$offset; $X <= $offset; ++$X ) {
+			for ( $Y = ($posY - 5); $Y <= $posY; ++$Y ) {
+				for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+					$world->setBlockAt($posX + $X, $Y, $posZ + $Z, array_shift($fillerBlockIds) === BlockTypeIds::GLASS ? $glassBlock : $airBlock, false);
 				}
 			}
 		}
-		for ( $addx = $addmin;$addx <= $addmax;++$addx ) {
-			for ( $addz = $addmin;$addz <= $addmax;++$addz ) {
-				$setBlock = ($addx === 0 && $addz === 0 ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h, $pos->z + $addz, $setBlock, false);
+		for ( $X = -$offset; $X <= $offset; ++$X ) {
+			for ( $Z = -$offset; $Z <= $offset; ++$Z ) {
+				$setBlock = (($X === 0 and $Z === 0) ? VanillaBlocks::GOLD() : VanillaBlocks::IRON());
+				$world->setBlockAt($posX + $X, $posY + $h, $posZ + $Z, $setBlock, false);
 
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h - 1, $pos->z + $addz, $airBlock, false);
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h - 2, $pos->z + $addz, $airBlock, false);
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h - 3, $pos->z + $addz, $airBlock, false);
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h - 4, $pos->z + $addz, $airBlock, false);
+				$world->setBlockAt($posX + $X, $posY + $h - 1, $posZ + $Z, $airBlock, false);
+				$world->setBlockAt($posX + $X, $posY + $h - 2, $posZ + $Z, $airBlock, false);
+				$world->setBlockAt($posX + $X, $posY + $h - 3, $posZ + $Z, $airBlock, false);
+				$world->setBlockAt($posX + $X, $posY + $h - 4, $posZ + $Z, $airBlock, false);
 
-				$world->setBlockAt($pos->x + $addx, $pos->y + $h - 5, $pos->z + $addz, $setBlock, false);
+				$world->setBlockAt($posX + $X, $posY + $h - 5, $posZ + $Z, $setBlock, false);
 			}
 		}
-		$pos->y += $h;
+		$liftPos->y += $h;
 
 		return true;
 	}
 
-	public function sendForm ( Player $p, array $floorList, array $liftInfo ) : void {
+	/**
+	 * @param array{0:string, 1:int}[] $floorDataList - [[0=>buttonText, 1=> floorY], ...]
+	 */
+	public function sendForm ( Player $p, array $floorDataList, World $world, Vector3 $liftPos, bool $fastMode ) : void {
 		if ( !$this->multiple_floors_mode ) {
 			return;
 		}
@@ -418,43 +416,39 @@ class Main extends PluginBase implements Listener {
 
 		$data = [
 			'type' => 'form',
-			'title' => TF::DARK_BLUE . '升降機' . ($liftInfo[3] ? ' (快速模式)' : ''),
+			'title' => TF::DARK_BLUE . '升降機' . ($fastMode ? ' (快速模式)' : ''),
 			'content' => TF::YELLOW . "請選擇樓層:\n",
 			'buttons' => [],
 		];
-		foreach ( $floorList as $floor ) {
-			$data['buttons'][] = ['text' => $floor[0]];
+		foreach ( $floorDataList as $floorData ) {
+			$data['buttons'][] = ['text' => $floorData[0]];
 		}
 
-		new Form($p, $data, function (Player $p, $data) use ($floorList, $liftInfo) {
+		new Form($p, $data, function (Player $p, $data) use ($floorDataList, $world, $liftPos, $fastMode) {
 			if ( !$this->multiple_floors_mode ) {
 				return;
 			}
-			if ( $data === null ) {
+			if ( !is_int($data) ) {
 				return;
 			}
 
-			$data = (int) $data;
-			if ( !isset($floorList[$data]) ) {
+			if ( !isset($floorDataList[$data]) ) {
 				return;
 			}
-			$world = $liftInfo[0];
-			$v3 = $liftInfo[1];
-			$fastMode = $liftInfo[3];
-			if ( $data === 0 or $data === (count($floorList) - 1) ) {
+			if ( $data === 0 or $data === (count($floorDataList) - 1) ) {
 				$fastMode = false;
 			}
-			$hash = self::getLiftHash($world, $v3);
-			if ( !isset($this->movingLift[$hash]) and $this->isLiftColumn($world, $v3) ) {
+			$hash = self::getLiftHash($world, $liftPos);
+			if ( !isset($this->movingLift[$hash]) and $this->isLiftColumn($world, $liftPos) ) {
 				$this->movingLift[$hash] = new MovingLift(
-					position: Position::fromObject($v3, $world),
-					movement: $floorList[$data][1] > $v3->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
+					position: Position::fromObject($liftPos, $world),
+					movement: $floorDataList[$data][1] > $liftPos->getFloorY() ? self::MOVEMENT_UP : self::MOVEMENT_DOWN,
 					waiting: null,
 					moving: false,
 					playSound: false,
-					targetY: $floorList[$data][1],
+					targetY: $floorDataList[$data][1],
 					unset: false,
-					liftSize: $this->getLiftSizeByPosition($world, $v3),
+					liftSize: $this->getLiftSizeByPosition($world, $liftPos),
 					fastMode: $fastMode,
 				);
 			} else {
@@ -476,17 +470,17 @@ class Main extends PluginBase implements Listener {
 		}
 		$n = $p->getName();
 		$b = $e->getBlock();
-		$b_pos = $b->getPosition();
-		$world = $b_pos->getWorld();
+		$bPos = $b->getPosition();
+		$world = $bPos->getWorld();
 		$id = $b->getTypeId();
 		if ( $id === BlockTypeIds::GOLD ) {
-			$v3 = $b_pos->asVector3();
-			if ( $b_pos->y < $p->getPosition()->y ) {
-				$v3->y += 5;
+			$liftPos = $bPos->asVector3();
+			if ( $bPos->y < $p->getPosition()->y ) {
+				$liftPos->y += 5;
 			}
-			if ( $this->isLiftColumn($world, $v3) ) {
+			if ( $this->isLiftColumn($world, $liftPos) ) {
 				$e->cancel();
-				$hash = self::getLiftHash($world, $v3);
+				$hash = self::getLiftHash($world, $liftPos);
 				$movingLift = ($this->movingLift[$hash] ?? null);
 				if ( $movingLift === null ) {
 					if ( $this->multiple_floors_mode ) {
@@ -494,21 +488,18 @@ class Main extends PluginBase implements Listener {
 						$worldMinY = $world->getMinY();
 						$liftMinY = $worldMinY + 5;
 
-						$floorList = [];
-						$fast_mode = false;
+						$floorDataList = [];
+						$fastMode = false;
 						for ( $y = $worldMaxY - 1; $y >= $liftMinY; --$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as [$offsetX, $offsetZ] ) {
-								$x = $v3->x + $offsetX;
-								$z = $v3->z + $offsetZ;
-								$signY = $y - 3;
-								$signBlock = $world->getBlockAt($x, $signY, $z, false, false);
+								$signBlock = $world->getBlockAt($liftPos->getFloorX() + $offsetX, $y - 3, $liftPos->getFloorZ() + $offsetZ, false, false);
 								if ( $signBlock instanceof BaseSign ) {
 									foreach ( [true, false] as $signFrontFace ) {
 										$signText = $signBlock->getFaceText($signFrontFace);
 										if ( strtolower($signText->getLine(0)) === '[lift]' ) {
-											$floorList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $v3->y ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
-											if ( !$fast_mode and strtolower($signText->getLine(2)) === 'fast' ) {
-												$fast_mode = true;
+											$floorDataList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $liftPos->getFloorY() ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+											if ( !$fastMode and strtolower($signText->getLine(2)) === 'fast' ) {
+												$fastMode = true;
 											}
 											goto nextY;
 										}
@@ -517,23 +508,23 @@ class Main extends PluginBase implements Listener {
 							}
 							nextY:
 						}
-						if ( count($floorList) !== 0 ) {
-							array_unshift($floorList, [TF::DARK_RED . '最高層 (高度:' . ($worldMaxY - 5) . ')', $worldMaxY - 1]);
-							$floorList[] = [TF::DARK_RED . '最低層 (高度:' . ($worldMinY + 1) . ')', $liftMinY];
-							$this->sendForm($p, $floorList, [$world, $v3, $p, $fast_mode]);
+						if ( count($floorDataList) !== 0 ) {
+							array_unshift($floorDataList, [TF::DARK_RED . '最高層 (高度:' . ($worldMaxY - 5) . ')', $worldMaxY - 1]);
+							$floorDataList[] = [TF::DARK_RED . '最低層 (高度:' . ($worldMinY + 1) . ')', $liftMinY];
+							$this->sendForm($p, $floorDataList, $world, $liftPos, $fastMode);
 							return;
 						}
 					}
-					$movement = ($b_pos->y > $p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN);
+					$movement = ($bPos->y > $p->getPosition()->y ? self::MOVEMENT_UP : self::MOVEMENT_DOWN);
 					$this->movingLift[$hash] = new MovingLift(
-						position: Position::fromObject($v3, $world),
+						position: Position::fromObject($liftPos, $world),
 						movement: $movement,
 						waiting: null,
 						moving: false,
 						playSound: false,
 						targetY: $movement === self::MOVEMENT_UP ? $world->getMaxY() - 1 : $world->getMinY() + 5,
 						unset: false,
-						liftSize: $this->getLiftSizeByPosition($world, $v3),
+						liftSize: $this->getLiftSizeByPosition($world, $liftPos),
 						fastMode: false,
 					);
 				} elseif ( $movingLift->waiting !== null ) {
@@ -545,9 +536,9 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
-			$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
+			$cancel = $this->checkQueue($p, $bPos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 			if ( $cancel ) {
-				$world->broadcastPacketToViewers($b_pos, self::createPlaySoundPacket($b_pos, 'random.click', 1, 0.6));
+				$world->broadcastPacketToViewers($bPos, self::createPlaySoundPacket($bPos, 'random.click', 1, 0.6));
 				$e->cancel();
 			}
 		} elseif ( $b instanceof BaseSign and match (true) {
@@ -557,46 +548,53 @@ class Main extends PluginBase implements Listener {
 			default => false,
 		} ) {
 			$e->cancel();
-			$cancel = $this->checkqueue($p, $b_pos, self::QUEUE_CHECK_XZ_SIGN);
+			$cancel = $this->checkQueue($p, $bPos, self::QUEUE_CHECK_XZ_SIGN);
 			if ( $cancel ) {
-				$world->broadcastPacketToViewers($b_pos, self::createPlaySoundPacket($b_pos, 'random.click', 1, 0.6));
+				$world->broadcastPacketToViewers($bPos, self::createPlaySoundPacket($bPos, 'random.click', 1, 0.6));
 			}
 		}
 	}
 
-	public function checkqueue ( Player $p, Position $b, array $checkxz ) : bool {
+	/**
+	 * @param int[][] $xzArrayList
+	 */
+	public function checkQueue ( Player $p, Position $bPos, array $xzArrayList ) : bool {
 		$cancel = false;
-		$world = $b->getWorld();
+		$world = $bPos->getWorld();
+		$blockY = $bPos->getFloorY();
 		$worldMaxY = $world->getMaxY();
-		if ( $b->y >= ($world->getMinY() + 2) and $b->y <= ($worldMaxY - 4) ) {
-			foreach ( $checkxz as [$offsetX, $offsetZ] ) {
-				$x = $b->x + $offsetX;
-				$z = $b->z + $offsetZ;
+		if ( $blockY >= ($world->getMinY() + 2) and $blockY <= ($worldMaxY - 4) ) {
+			$blockX = $bPos->getFloorX();
+			$blockZ = $bPos->getFloorZ();
+
+			foreach ( $xzArrayList as [$offsetX, $offsetZ] ) {
+				$x = $blockX + $offsetX;
+				$z = $blockZ + $offsetZ;
 				for ( $y = 5; $y < $worldMaxY; ++$y ) {
 					if ( $this->isLiftColumn($world, new Vector3($x, $y, $z)) ) {
 						$cancel = true;
-						$targetY = $b->y + 3;
+						$targetY = $blockY + 3;
 						if ( $targetY === $y ) {
 							$p->sendMessage(TF::GREEN . '> 升降機已經到達');
 							return $cancel;
 						}
-						$v3 = new Vector3($x, $y, $z);
-						$hash = self::getLiftHash($world, $v3);
+						$liftPos = new Position($x, $y, $z, $world);
+						$hash = self::getLiftHash($world, $liftPos);
 
 						$movingLift = ($this->movingLift[$hash] ??= new MovingLift(
-							position: Position::fromObject($v3, $world),
+							position: $liftPos,
 							movement: self::MOVEMENT_STOP,
 							waiting: null,
 							moving: false,
 							playSound: false,
-							targetY: $v3->y,
+							targetY: $y,
 							unset: true,
-							liftSize: $this->getLiftSizeByPosition($world, $v3),
+							liftSize: $this->getLiftSizeByPosition($world, $liftPos),
 							fastMode: true,
 						));
 						$movingLift->fastMode = true;
 
-						$movingLift->queue[$targetY] ??= new QueueEntry($b, $targetY);
+						$movingLift->queue[$targetY] ??= new QueueEntry($bPos->asVector3(), $targetY);
 
 						return $cancel;
 					}
@@ -613,27 +611,19 @@ class Main extends PluginBase implements Listener {
 		}
 
 		$insideEntities = [];
-		$v3 = $movingLift->position;
-		switch ( $movingLift->getSize() ) {
-			case 5;
-				$addmin = -2;
-				$addmax = 2;
-				break;
-			case 3;
-				$addmin = -1;
-				$addmax = 1;
-				break;
-			default;
-				$addmin = $addmax = 0;
-				break;
-		}
-		$minX = $v3->x + $addmin;
-		$maxX = $v3->x + $addmax + 1;
-		$minY = $v3->y - 6.5;
-		$maxY = $v3->y;
-		$minZ = $v3->z + $addmin;
-		$maxZ = $v3->z + $addmax + 1;
-		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($v3)) as $entity ) {
+		$liftPos = $movingLift->position;
+		$offset = match ( $movingLift->getSize() ) {
+			5 => 2,
+			3 => 1,
+			default => 0,
+		};
+		$minX = $liftPos->getFloorX() - $offset;
+		$maxX = $liftPos->getFloorX() + $offset + 1;
+		$minY = $liftPos->getFloorY() - 6.5;
+		$maxY = $liftPos->getFloorY();
+		$minZ = $liftPos->getFloorZ() - $offset;
+		$maxZ = $liftPos->getFloorZ() + $offset + 1;
+		foreach ( ($this->tp_entity ? $world->getEntities() : $world->getViewersForPosition($liftPos)) as $entity ) {
 			$pos = $entity->getPosition();
 			if ( (!$entity instanceof Player or $entity->getGamemode() !== GameMode::SPECTATOR) and $pos->x > $minX and $pos->x < $maxX and $pos->z > $minZ and $pos->z < $maxZ and $pos->y > $minY and $pos->y < $maxY ) {
 				$insideEntities[$entity->getId()] = $entity;
@@ -657,13 +647,13 @@ class Main extends PluginBase implements Listener {
 	}
 
 	public function isLiftColumn ( World $world, Vector3 $pos, $blockId = BlockTypeIds::GOLD ) : bool {
-		$y = $pos->y;
+		$y = $pos->getFloorY();
 
 		if ( $y > ($world->getMaxY() - 1) ) {
 			return false;
 		}
-		$x = $pos->x;
-		$z = $pos->z;
+		$x = $pos->getFloorX();
+		$z = $pos->getFloorZ();
 
 		$worldMinY = $world->getMinY();
 
@@ -683,38 +673,38 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public function isLift_25 ( World $world, $islift_9, Vector3 $pos ) : bool {
+	public function isLift_25 ( World $world, bool $islift_9, Vector3 $pos ) : bool {
 		if ( !$this->enable5x5 ) {
 			return false;
 		}
-		$x = $pos->x;
-		$y = $pos->y;
-		$z = $pos->z;
+		$x = $pos->getFloorX();
+		$y = $pos->getFloorY();
+		$z = $pos->getFloorZ();
 
-		for ( $addx = -2;$addx <= 2;++$addx ) {
-			for ( $addz = -2;$addz <= 2;++$addz ) {
-				if ( abs($addx) === 2 or abs($addz) === 2 ) {
-					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x + $addx, $y, $z + $addz)) ) {
+		for ( $X = -2; $X <= 2; ++$X ) {
+			for ( $Z = -2; $Z <= 2; ++$Z ) {
+				if ( abs($X) === 2 or abs($Z) === 2 ) {
+					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x + $X, $y, $z + $Z)) ) {
 						return false;
 					}
 				}
 			}
 		}
-		return ( $islift_9 or $this->isLift_9($world, $pos) );
+		return $islift_9 or $this->isLift_9($world, $pos);
 	}
 
 	public function isLift_9 ( World $world, Vector3 $pos ) : bool {
 		if ( !$this->enable3x3 ) {
 			return false;
 		}
-		$x = $pos->x;
-		$y = $pos->y;
-		$z = $pos->z;
+		$x = $pos->getFloorX();
+		$y = $pos->getFloorY();
+		$z = $pos->getFloorZ();
 
-		for ( $addx = -1;$addx <= 1;++$addx ) {
-			for ( $addz = -1;$addz <= 1;++$addz ) {
-				if ( $addx !== 0 or $addz !== 0 ) {
-					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x + $addx, $y, $z + $addz)) ) {
+		for ( $X = -1; $X <= 1; ++$X ) {
+			for ( $Z = -1; $Z <= 1; ++$Z ) {
+				if ( $X !== 0 or $Z !== 0 ) {
+					if ( !$this->isLiftColumnIronBlock($world, new Vector3($x + $X, $y, $z + $Z)) ) {
 						return false;
 					}
 				} else {
@@ -727,8 +717,8 @@ class Main extends PluginBase implements Listener {
 		return true;
 	}
 
-	public static function getLiftHash ( World $world, Vector3 $v3 ) : string {
-		return pack('NJ', $world->getId(), (((int) $v3->x) << 32) | (((int) $v3->z) & 0xffffffff));
+	public static function getLiftHash ( World $world, Vector3 $pos ) : string {
+		return pack('NJ', $world->getId(), ($pos->getFloorX() << 32) | ($pos->getFloorZ() & 0xffffffff));
 	}
 
 	public function pvp ( EntityDamageEvent $e ) {
