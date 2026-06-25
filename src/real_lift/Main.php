@@ -176,15 +176,13 @@ class Main extends PluginBase implements Listener {
 								$movingLift->movement = self::MOVEMENT_DOWN;
 								$movingLift->waiting = null;
 								$movingLift->targetY = $queueEntry->getTargetY();
-								$movingLift->unset = false;
-								$movingLift->hasQueue = true;
 							} elseif ( $liftPosY < $queueEntry->getTargetY() ) {
 								$movingLift->movement = self::MOVEMENT_UP;
 								$movingLift->waiting = null;
 								$movingLift->targetY = $queueEntry->getTargetY();
-								$movingLift->unset = false;
-								$movingLift->hasQueue = true;
 							}
+							$movingLift->unset = false;
+							$movingLift->hasQueue = true;
 							$movingLift->fastMode = true;
 							break;
 						}
