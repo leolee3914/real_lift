@@ -488,14 +488,17 @@ class Main extends PluginBase implements Listener {
 
 						$floorDataList = [];
 						$fastMode = false;
+						$liftPosX = $liftPos->getFloorX();
+						$liftPosY = $liftPos->getFloorY();
+						$liftPosZ = $liftPos->getFloorZ();
 						for ( $y = $worldMaxY - 1; $y >= $liftMinY; --$y ) {
 							foreach ( self::QUEUE_CHECK_XZ_SIGN as [$offsetX, $offsetZ] ) {
-								$signBlock = $world->getBlockAt($liftPos->getFloorX() + $offsetX, $y - 3, $liftPos->getFloorZ() + $offsetZ, false, false);
+								$signBlock = $world->getBlockAt($liftPosX + $offsetX, $y - 3, $liftPosZ + $offsetZ, false, false);
 								if ( $signBlock instanceof BaseSign ) {
 									foreach ( [true, false] as $signFrontFace ) {
 										$signText = $signBlock->getFaceText($signFrontFace);
 										if ( strtolower($signText->getLine(0)) === '[lift]' ) {
-											$floorDataList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $liftPos->getFloorY() ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+											$floorDataList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $liftPosY ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
 											if ( !$fastMode and strtolower($signText->getLine(2)) === 'fast' ) {
 												$fastMode = true;
 											}
