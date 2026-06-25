@@ -563,15 +563,16 @@ class Main extends PluginBase implements Listener {
 		$cancel = false;
 		$world = $bPos->getWorld();
 		$blockY = $bPos->getFloorY();
+		$worldMinY = $world->getMinY();
 		$worldMaxY = $world->getMaxY();
-		if ( $blockY >= ($world->getMinY() + 2) and $blockY <= ($worldMaxY - 4) ) {
+		if ( $blockY >= ($worldMinY + 2) and $blockY <= ($worldMaxY - 4) ) {
 			$blockX = $bPos->getFloorX();
 			$blockZ = $bPos->getFloorZ();
 
 			foreach ( $xzArrayList as [$offsetX, $offsetZ] ) {
 				$x = $blockX + $offsetX;
 				$z = $blockZ + $offsetZ;
-				for ( $y = 5; $y < $worldMaxY; ++$y ) {
+				for ( $y = $worldMinY + 5; $y < $worldMaxY; ++$y ) {
 					if ( $this->isLiftColumn($world, new Vector3($x, $y, $z)) ) {
 						$cancel = true;
 						$targetY = $blockY + 3;
