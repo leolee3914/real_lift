@@ -537,7 +537,7 @@ class Main extends PluginBase implements Listener {
 				}
 			}
 		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
-			$cancel = $this->checkQueue($p, $bPos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
+			$cancel = $this->addToQueue($p, $bPos, self::QUEUE_CHECK_XZ_REDSTONE_LAMP);
 			if ( $cancel ) {
 				$world->broadcastPacketToViewers($bPos, self::createPlaySoundPacket($bPos, 'random.click', 1, 0.6));
 				$e->cancel();
@@ -549,7 +549,7 @@ class Main extends PluginBase implements Listener {
 			default => false,
 		} ) {
 			$e->cancel();
-			$cancel = $this->checkQueue($p, $bPos, self::QUEUE_CHECK_XZ_SIGN);
+			$cancel = $this->addToQueue($p, $bPos, self::QUEUE_CHECK_XZ_SIGN);
 			if ( $cancel ) {
 				$world->broadcastPacketToViewers($bPos, self::createPlaySoundPacket($bPos, 'random.click', 1, 0.6));
 			}
@@ -559,7 +559,7 @@ class Main extends PluginBase implements Listener {
 	/**
 	 * @param int[][] $xzArrayList
 	 */
-	public function checkQueue ( Player $p, Position $bPos, array $xzArrayList ) : bool {
+	public function addToQueue ( Player $p, Position $bPos, array $xzArrayList ) : bool {
 		$cancel = false;
 		$world = $bPos->getWorld();
 		$blockY = $bPos->getFloorY();
