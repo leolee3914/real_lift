@@ -50,7 +50,3 @@ This mode will be disabled if the elevator has no floor signs, or if the player 
 - `enable3x3`: (boolean) Enables 3x3 elevators (Requires `multiple_floors_mode`).
 - `enable5x5`: (boolean) Enables 5x5 elevators; not recommended due to performance (Requires `multiple_floors_mode`).
 - `tp_entity`: (boolean) Moves all entities (e.g., mobs, dropped items) inside the elevator along with it.
-
-# Commands
-
-This plugin does not require or include any commands.
