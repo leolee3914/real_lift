@@ -2,6 +2,8 @@
 
 A more realistic elevator/lift plugin for PocketMine-MP.
 
+Java version for PaperMC: [https://github.com/leolee3914/real_lift_java](https://github.com/leolee3914/real_lift_java)
+
 # Installation
 
 1. Download `.phar` plugin from the [release page](https://github.com/leolee3914/real_lift/releases).
