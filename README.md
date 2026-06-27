@@ -1,76 +1,56 @@
-# 真正升降機插件
+# Real Lift Plugin
 
-比較真實的Pocketmine升降機插件
+A more realistic elevator/lift plugin for PocketMine-MP.
 
-## 許可證 License
-本項目以 Server Side Public License (SSPL) 授權，詳情請參考 LICENSE 及 [Server Side Public License FAQ](https://www.mongodb.com/licensing/server-side-public-license/faq)
+# Installation
 
-## 插件使用方法
+1. Download `.phar` plugin from the [release page](https://github.com/leolee3914/real_lift/releases).
+2. Place the plugin file to `plugins` folder and delete the old plugin file.
+3. Restart the server.
 
-### 創造升降機
-![](https://i.imgur.com/XLIKerA.jpg)
-![](https://i.imgur.com/bdNn5IY.jpg)
-![](https://i.imgur.com/UfE1i4s.jpg)
-如圖所示，在同一直行放置兩個相隔4個空氣的金磚就可以組成升降機，在金磚外圍加入鐵磚可最大支援5x5，無需指令，無需OP權限<br>
-升降機只會在空氣或玻璃中上下移動，即上圖中金磚上的木材會防礙升降機移動，使升降機無法上升<br>
-<br>
-紅石燈能夠使1x1升降機返回該層(高度)，若使用紅石燈，紅石燈必須放置於升降機相鄰的一格，並離地面兩格高<br>
-若有多個紅石燈控制同一升降機，升降機會以紅石燈啟動時間的排序前往不同高度<br>
-每個紅石燈只能控制一台升降機，若有多台升降機，建議每台升降機最少相隔6個方塊，並放置多個紅石燈<br>
-<br>
-![](https://i.imgur.com/ovhPLyj.jpg)
-若未能使用紅石燈，可改用木牌，木牌必須放置於有效位置，並離地面兩格高<br>
-而木牌的第一、二行須依以下方式填寫<br>
+# How to use
 
-第一行: `[lift]` (不區分大小寫)<br>
-第二行: `(本層名稱)`<br>
-第三行: `fast` (若此行輸入fast，升降機就會在任何情況都使用快速移動模式)<br>
-<br>
-<br>
-![](https://i.imgur.com/yxWW07p.jpg)
+## Building an elevator
 
-上圖為升降機的俯視圖，其中金磚組成1x1升降機，紅石燈表示其有效位置，木材表示木牌的有效位置
-<br>
-<br>
-![](https://i.imgur.com/ZtLlGMq.jpg)
+![](https://i.imgur.com/cYlBxa9.png)
 
-上圖為升降機的俯視圖，其中金磚和鐵磚組成3x3升降機，木材表示木牌的有效位置(不能使用紅石燈)
-<br>
-<br>
-![](https://i.imgur.com/jbYX902.jpg)
+As shown in the images above, place two gold blocks vertically in the same column, separated by exactly 4 blocks of air, to create a 1x1 elevator. Adding iron blocks around the gold blocks allows you to expand the elevator to 3x3 or 5x5 size. No commands or permissions are required.
 
-上圖為升降機的俯視圖，其中金磚和鐵磚組成5x5升降機，木材表示木牌的有效位置(不能使用紅石燈)
+Elevators will only move vertically through air or glass blocks.
 
-### 使用升降機
-1. 點擊紅石燈/木牌(如有)，使升降機返回本層<br>
-2. 登上升降機<br>
-3. 點擊上/下方構成升降機的金磚，使升降機上/下移動，若有樓層木牌及已開啟選擇樓層功能時，將會彈出樓層選擇表單<br>
-4. 升降機到達時會有"叮"的聲響<br>
-※如升降機移動時，玩家點擊構成升降機的金磚，升降機會停止移動<br>
-※每台升降機能接載多名玩家(如果你能點擊金磚)<br>
-※升降機到達後會停留最少2秒<br>
-※如果點擊紅石燈/木牌後沒有閃亮、粒子效果或提示，則表示該紅石燈/木牌的擺放位置錯誤或者升降機不合法<br>
+A redstone lamp can be used to call a 1x1 elevator to the current floor. The redstone lamp must be placed directly adjacent to the elevator, exactly one blocks above the ground. If multiple redstone lamps call the same elevator, the elevator will travel to the requested floors in the order the lamps were activated. Each redstone lamp can only control one elevator. If you have multiple elevators nearby, it is recommended to keep them at least 6 blocks apart from each other and use separate redstone lamps.
 
-***快速移動模式***<br>
-在此模式中，升降機會以傳送方式移動到目的地<br>
-在以下情況會自動使用此模式:
-* 任何一塊樓層木牌上的第三行是fast<br>
-* 控制該升降機的紅石燈/木牌被啟動<br>
+Sign can also be used to call an elevator. The sign must be placed in a valid position, exactly one blocks above the ground. Fill out the sign exactly as follows:
+- Line 1: `[lift]` (case-insensitive)
+- Line 2: `(Name of the floor)`
+- Line 3: `fast` (optional, if you type 'fast' here, the elevator will always use Fast Mode)
 
-※若升降機沒有樓層木牌；或玩家在選擇樓層清單中，選擇了**最高層**或**最低層**的話，此模式將被禁止使用
+## Using the elevator
 
-## 配置文件
+1. Tap the redstone lamp or sign to call the elevator to your current floor.
+2. Step onto the elevator platform.
+3. Tap the top or bottom gold block of the elevator to move up or down respectively. If floor signs are set up and the multiple floors feature is enabled in the config.yml, a menu will pop up for floor selection.
+4. A "ding" sound will play when the elevator arrives at its destination.
 
-### config.yml
-multiple_floors_mode: bool 是否開啟選擇樓層功能<br>
-enable3x3: bool 啟用3x3的升降機 (須先開啟選擇樓層功能)<br>
-enable5x5: bool 啟用5x5的升降機；由於性能關係，不建議啟用此選項 (須先開啟選擇樓層功能)<br>
-tp_entity: bool 移動升降機中的所有實體(Entity)<br>
+If tapping a redstone lamp/sign produces no blinking, particle effects, or chat messages, it means the block is placed in an incorrect position or the elevator setup is invalid.
 
-## 指令
-此插件沒有任何指令
+## Fast mode
 
-## 真正升降機插件由 Lee Siu San 制作
+In this mode, the elevator moves to its destination via teleportation. This mode is triggered automatically in the following situations:
+- If any floor sign connected to the elevator has `fast` written on the 3rd line.
+- When the elevator is called via a redstone lamp or sign.
 
-[https://github.com/leolee3914](https://github.com/leolee3914)<br>
-[https://gitlab.com/leolee3914](https://gitlab.com/leolee3914)
+This mode will be disabled if the elevator has no floor signs, or if the player selects the highest or lowest floor option from the floor selection menu.
+
+# Configuration
+
+## config.yml
+
+- `multiple_floors_mode`: (boolean) Enables the floor selection menu form.
+- `enable3x3`: (boolean) Enables 3x3 elevators (Requires `multiple_floors_mode`).
+- `enable5x5`: (boolean) Enables 5x5 elevators; not recommended due to performance (Requires `multiple_floors_mode`).
+- `tp_entity`: (boolean) Moves all entities (e.g., mobs, dropped items) inside the elevator along with it.
+
+# Commands
+
+This plugin does not require or include any commands.
