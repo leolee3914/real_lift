@@ -82,8 +82,10 @@ class Main extends PluginBase implements Listener {
 		] as $key => $defaultValue ) {
 			if ( !$config->exists($key) ) {
 				$config->set($key, $defaultValue);
-				$config->save();
 			}
+		}
+		if ( $config->hasChanged() ) {
+			$config->save();
 		}
 		$this->multiple_floors_mode = (bool) $config->get('multiple_floors_mode');
 		$this->enable3x3 = (bool) $config->get('enable3x3');
