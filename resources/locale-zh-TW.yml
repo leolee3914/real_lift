@@ -1,0 +1,13 @@
+---
+menu-title-lift: "升降機"
+menu-title-lift-fast-mode: "升降機 (快速模式)"
+select-floor: "請選擇樓層"
+lift-moved: "你不在該升降機中或升降機已經移動"
+height: "高度"
+current-height: "目前高度"
+highest: "最高層"
+lowest: "最低層"
+lift-waiting: "升降機稍作停留，請等候數秒鐘"
+stopped-lift: "已停止升降機"
+lift-arrived: "升降機已經到達"
+...

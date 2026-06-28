@@ -90,6 +90,12 @@ class Main extends PluginBase implements Listener {
 		$this->enable5x5 = (bool) $config->get('enable5x5');
 		$this->tp_entity = (bool) $config->get('tp_entity');
 
+		$this->saveResource('locale.yml');
+		$this->saveResource('locale-eng.yml');
+		$this->saveResource('locale-zh-TW.yml');
+		$locale = new Config($this->getDataFolder() . 'locale.yml', Config::YAML, []);
+		Locale::setData($locale->getAll());
+
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->moveLift(...)), 1);
 	}
 
@@ -414,8 +420,8 @@ class Main extends PluginBase implements Listener {
 
 		$data = [
 			'type' => 'form',
-			'title' => TF::DARK_BLUE . '升降機' . ($fastMode ? ' (快速模式)' : ''),
-			'content' => TF::YELLOW . "請選擇樓層:\n",
+			'title' => TF::DARK_BLUE . Locale::get($fastMode ? Locale::MENU_TITLE_LIFT_FAST_MODE : Locale::MENU_TITLE_LIFT),
+			'content' => TF::YELLOW . Locale::get(Locale::SELECT_FLOOR) . ":\n",
 			'buttons' => [],
 		];
 		foreach ( $floorDataList as $floorData ) {
@@ -450,7 +456,7 @@ class Main extends PluginBase implements Listener {
 					fastMode: $fastMode,
 				);
 			} else {
-				$p->sendMessage(TF::RED . '!!! 你不在該升降機中或升降機已經移動 !!!');
+				$p->sendMessage(TF::RED . '!!! ' . Locale::get(Locale::LIFT_MOVED) . ' !!!');
 			}
 		});
 	}
@@ -498,7 +504,7 @@ class Main extends PluginBase implements Listener {
 									foreach ( [true, false] as $signFrontFace ) {
 										$signText = $signBlock->getFaceText($signFrontFace);
 										if ( strtolower($signText->getLine(0)) === '[lift]' ) {
-											$floorDataList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (高度:' . ($y - 4) . ')' . ($y === $liftPosY ? "\n" . TF::DARK_RED . '[*** 目前高度 ***]' : ''), $y];
+											$floorDataList[] = [TF::DARK_BLUE . $signText->getLine(1) . TF::RESET . TF::DARK_BLUE . ' (' . Locale::get(Locale::HEIGHT) . ':' . ($y - 4) . ')' . ($y === $liftPosY ? "\n" . TF::DARK_RED . '[*** ' . Locale::get(Locale::CURRENT_HEIGHT) . ' ***]' : ''), $y];
 											if ( !$fastMode and strtolower($signText->getLine(2)) === 'fast' ) {
 												$fastMode = true;
 											}
@@ -510,8 +516,8 @@ class Main extends PluginBase implements Listener {
 							nextY:
 						}
 						if ( count($floorDataList) !== 0 ) {
-							array_unshift($floorDataList, [TF::DARK_RED . '最高層 (高度:' . ($worldMaxY - 5) . ')', $worldMaxY - 1]);
-							$floorDataList[] = [TF::DARK_RED . '最低層 (高度:' . ($worldMinY + 1) . ')', $liftMinY];
+							array_unshift($floorDataList, [TF::DARK_RED . Locale::get(Locale::HIGHEST) . ' (' . Locale::get(Locale::HEIGHT) . ':' . ($worldMaxY - 5) . ')', $worldMaxY - 1]);
+							$floorDataList[] = [TF::DARK_RED . Locale::get(Locale::LOWEST) . ' (' . Locale::get(Locale::HEIGHT) . ':' . ($worldMinY + 1) . ')', $liftMinY];
 							$this->sendForm($p, $floorDataList, $world, $liftPos, $fastMode);
 							return;
 						}
@@ -529,11 +535,11 @@ class Main extends PluginBase implements Listener {
 						fastMode: false,
 					);
 				} elseif ( $movingLift->waiting !== null ) {
-					$p->sendMessage(TF::YELLOW . '!!! 升降機稍作停留，請等候數秒鐘 !!!');
+					$p->sendMessage(TF::YELLOW . '!!! ' . Locale::get(Locale::LIFT_WAITING) . ' !!!');
 				} elseif ( isset($movingLift->insideEntities[$p->getId()]) ) {
 					$movingLift->movement = self::MOVEMENT_STOP;
 					$movingLift->waiting = 40;
-					$p->sendMessage(TF::GREEN . '> 已停止升降機');
+					$p->sendMessage(TF::GREEN . '> ' . Locale::get(Locale::STOPPED_LIFT));
 				}
 			}
 		} elseif ( $id === BlockTypeIds::REDSTONE_LAMP ) {
@@ -577,7 +583,7 @@ class Main extends PluginBase implements Listener {
 						$cancel = true;
 						$targetY = $blockY + 3;
 						if ( $targetY === $y ) {
-							$p->sendMessage(TF::GREEN . '> 升降機已經到達');
+							$p->sendMessage(TF::GREEN . '> ' . Locale::get(Locale::LIFT_ARRIVED));
 							return $cancel;
 						}
 						$liftPos = new Position($x, $y, $z, $world);

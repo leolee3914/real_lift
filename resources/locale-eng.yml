@@ -1,0 +1,13 @@
+---
+menu-title-lift: "Elevator"
+menu-title-lift-fast-mode: "Elevator (Fast mode)"
+select-floor: "Please select floor"
+lift-moved: "You are not in the elevator or the elevator has been moved."
+height: "Height"
+current-height: "Current height"
+highest: "Highest"
+lowest: "Lowest"
+lift-waiting: "The elevator pauses. Please wait a few seconds."
+stopped-lift: "You stopped the elevator."
+lift-arrived: "The elevator has arrived."
+...
