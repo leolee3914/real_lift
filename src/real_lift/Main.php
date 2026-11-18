@@ -116,6 +116,9 @@ class Main extends PluginBase implements Listener {
 			$pos->z,
 			$vol,
 			$pitch,
+			0,
+			false,
+			null,
 			null,
 		);
 	}
